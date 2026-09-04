@@ -74,7 +74,7 @@
             </li>
 
             <li class="nav-item">
-                <div class="navbar-heading">Inventory</div>
+                <div class="navbar-heading">Menu Management</div>
             </li>
 
             <li class="nav-item">
@@ -106,14 +106,52 @@
             </li>
 
             <li class="nav-item">
-                <div class="navbar-heading">Financials</div>
+                <div class="navbar-heading">Inventory</div>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link has-arrow {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
-                   href="{{ route('admin.products.index') }}">
-                    <i data-feather="codepen" class="nav-icon icon-xs me-2"></i> Product
+                <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" data-bs-target="#navInventory"
+                   aria-expanded="false" aria-controls="navInventory">
+                    <i data-feather="box" class="nav-icon icon-xs me-2"></i> Inventory
                 </a>
+                <div id="navInventory" class="collapse" data-bs-parent="#sideNavbar">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link has-arrow {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
+                                Items
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link has-arrow" href="{{ route('admin.reports.stock.summary') }}">
+                                Stock
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link has-arrow" href="#!">
+                                Consumption
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link has-arrow" href="#!">
+                                Stock Group
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link has-arrow" href="#!">
+                                Stock History
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link has-arrow" href="#!">
+                                Batch Production
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <li class="nav-item">
+                <div class="navbar-heading">Financials</div>
             </li>
 
             <li class="nav-item">
