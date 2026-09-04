@@ -92,6 +92,13 @@
             </li>
 
             <li class="nav-item">
+                <a class="nav-link has-arrow {{ request()->routeIs('admin.recipes.*') ? 'active' : '' }}"
+                   href="{{ route('admin.recipes.index') }}">
+                    <i data-feather="book-open" class="nav-icon icon-xs me-2"></i> Recipes
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a class="nav-link has-arrow {{ request()->routeIs('admin.tables.*') ? 'active' : '' }}"
                    href="{{ route('admin.tables.index') }}">
                     <i data-feather="table" class="nav-icon icon-xs me-2"></i> Tables
@@ -123,27 +130,22 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.reports.stock_report') ? 'active' : '' }}" href="{{ route('admin.reports.stock_report') }}">
-                                Stock
+                                Stock Report
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link has-arrow" href="#!">
-                                Consumption
+                            <a class="nav-link has-arrow {{ request()->routeIs('admin.stock-adjustments.*') ? 'active' : '' }}" href="{{ route('admin.stock-adjustments.index') }}">
+                                Stock Adjustments
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link has-arrow" href="#!">
-                                Stock Group
+                            <a class="nav-link has-arrow {{ request()->routeIs('admin.wastages.*') ? 'active' : '' }}" href="{{ route('admin.wastages.index') }}">
+                                Wastage
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link has-arrow" href="#!">
-                                Stock History
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link has-arrow" href="#!">
-                                Batch Production
+                            <a class="nav-link has-arrow {{ request()->routeIs('admin.kitchen-consumptions.*') ? 'active' : '' }}" href="{{ route('admin.kitchen-consumptions.index') }}">
+                                Kitchen Consumption
                             </a>
                         </li>
                     </ul>

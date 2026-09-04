@@ -106,6 +106,11 @@ class MenuItem extends Model implements HasMedia
         return $this->belongsTo(Category::class, 'category_id');
     }
 
+    public function recipe()
+    {
+        return $this->hasOne(Recipe::class);
+    }
+
     // ── Scopes ─────────────────────────────────────────────────────
 
     public function scopeActive($query)

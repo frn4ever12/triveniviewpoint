@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DigitalMenuController;
 use App\Http\Controllers\Admin\ExpenseController;
-use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\KitchenConsumptionController;
 use App\Http\Controllers\Admin\KotController;
 use App\Http\Controllers\Admin\KtdController;
 use App\Http\Controllers\Admin\LabelController;
@@ -15,13 +15,16 @@ use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PurchaseController;
+use App\Http\Controllers\Admin\RecipeController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\RoomController;
+use App\Http\Controllers\Admin\StockAdjustmentController;
+use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\userController;
-use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\WastageController;
 use App\Http\Controllers\Admin\WebsiteSettingController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
@@ -83,6 +86,15 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class)->except(['index', 'show']);
         Route::resource('purchases', PurchaseController::class)->except(['index', 'show']);
         Route::resource('expenses', ExpenseController::class)->except(['index', 'show']);
+
+        // Recipe Management
+        Route::resource('recipes', RecipeController::class);
+        Route::post('recipes/{recipe}/update-costs', [RecipeController::class, 'updateCosts'])->name('recipes.update-costs');
+
+        // Stock Management
+        Route::resource('stock-adjustments', StockAdjustmentController::class);
+        Route::resource('wastages', WastageController::class);
+        Route::resource('kitchen-consumptions', KitchenConsumptionController::class);
 
         Route::resource('users', userController::class);
     });

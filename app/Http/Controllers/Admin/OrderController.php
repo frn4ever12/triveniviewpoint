@@ -10,8 +10,10 @@ use App\Models\Kot;
 use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Recipe;
 use App\Models\Table;
 use App\Models\User;
+use App\Services\InventoryTransactionService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -20,6 +22,13 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+    protected $inventoryService;
+
+    public function __construct(InventoryTransactionService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
+
     public function index()
     {
         $tables = Table::all();
@@ -145,6 +154,9 @@ class OrderController extends Controller
 
         DB::beginTransaction();
         try {
+            // Reverse inventory if it was deducted
+            $this->reverseInventoryForOrder($order);
+
             // Free up the table
             if ($order->table) {
                 $order->table->update(['status' => 'available']);
@@ -529,6 +541,9 @@ class OrderController extends Controller
                 }
 
                 $order->invoice->update($invoiceData);
+
+                // Deduct inventory based on recipe when order is completed
+                $this->deductInventoryForOrder($order);
             }
 
             // Free up the table
@@ -652,6 +667,63 @@ class OrderController extends Controller
         $newNumber = $lastInvoice ? (int) substr($lastInvoice->invoice_number, -4) + 1 : 1;
 
         return "INV-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Deduct inventory based on recipe for an order
+     */
+    private function deductInventoryForOrder(Order $order)
+    {
+        // Check if inventory has already been deducted for this order
+        if ($this->inventoryService->hasOrderDeductedStock($order->id)) {
+            return;
+        }
+
+        foreach ($order->items as $orderItem) {
+            $menuItem = $orderItem->menuItem;
+            $recipe = $menuItem->recipe;
+
+            if ($recipe) {
+                foreach ($recipe->items as $recipeItem) {
+                    $quantityNeeded = $recipeItem->quantity * $orderItem->quantity;
+
+                    try {
+                        $this->inventoryService->createPOSConsumption(
+                            $recipeItem->product_id,
+                            $quantityNeeded,
+                            $order->id,
+                            [
+                                'notes' => "Recipe deduction for {$menuItem->name} (Order #{$order->order_no})",
+                                'unit_id' => $recipeItem->unit_id,
+                            ]
+                        );
+                    } catch (\Exception $e) {
+                        // Log error but continue with other items
+                        \Log::error("Failed to deduct inventory for product {$recipeItem->product_id}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Reverse inventory deduction for an order (for cancellation/refund)
+     */
+    private function reverseInventoryForOrder(Order $order)
+    {
+        $transactions = $this->inventoryService->getStockLedger(null, [
+            'reference_type' => 'Order',
+            'reference_id' => $order->id,
+            'transaction_type' => 'pos_consumption',
+        ]);
+
+        foreach ($transactions as $transaction) {
+            try {
+                $this->inventoryService->reverseTransaction($transaction, "Order cancellation - Order #{$order->order_no}");
+            } catch (\Exception $e) {
+                \Log::error("Failed to reverse inventory transaction: " . $e->getMessage());
+            }
+        }
     }
 
     public function pos()

@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Unit;
 use App\Models\Supplier;
+use App\Services\InventoryTransactionService;
 use App\Traits\FileUploadTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,13 @@ use Illuminate\Support\Facades\DB;
 class PurchaseController extends Controller
 {
     use FileUploadTrait;
+
+    protected $inventoryService;
+
+    public function __construct(InventoryTransactionService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
 
     public function index(PurchaseDataTable $dataTable)
     {
@@ -95,6 +103,26 @@ class PurchaseController extends Controller
 
             if (!empty($itemsPayload)) {
                 $purchase->items()->createMany($itemsPayload);
+
+                // Auto-update inventory for items marked to add to inventory
+                foreach ($itemsPayload as $itemData) {
+                    if ($itemData['add_to_inventory']) {
+                        try {
+                            $this->inventoryService->createPurchaseStockIn(
+                                $itemData['product_id'],
+                                $itemData['quantity'],
+                                $itemData['unit_rate'],
+                                $purchase->id,
+                                [
+                                    'batch_number' => $itemData['batch_number'] ?? null,
+                                    'expiry_date' => $itemData['expiry_date'] ?? null,
+                                ]
+                            );
+                        } catch (\Exception $e) {
+                            \Log::error("Failed to add inventory for product {$itemData['product_id']}: " . $e->getMessage());
+                        }
+                    }
+                }
             }
 
             $discountPercent = (float)($validated['discount_percent'] ?? 0);
