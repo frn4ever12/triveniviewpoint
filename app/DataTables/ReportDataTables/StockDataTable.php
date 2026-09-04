@@ -5,6 +5,7 @@ namespace App\DataTables\ReportDataTables;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder as HtmlBuilder;
 use Yajra\DataTables\Html\Button;
@@ -49,7 +50,7 @@ class StockDataTable extends DataTable
 
     public function query(Product $model): QueryBuilder
     {
-        return $model->newQuery()
+        $query = $model->newQuery()
             ->select([
                 'products.id as product_id',
                 'products.name as product_name',
@@ -59,14 +60,22 @@ class StockDataTable extends DataTable
                 DB::raw('(COALESCE(SUM(purchase_items.quantity), 0) - COALESCE(stock_usages.quantity_used, 0)) as current_stock'),
                 DB::raw('ROUND(AVG(purchase_items.unit_rate), 2) as avg_unit_rate'),
                 DB::raw('MAX(purchase_items.created_at) as last_purchase_date'),
-                'suppliers.name as supplier_name',
+                DB::raw('NULL as supplier_name'),
             ])
             ->leftJoin('purchase_items', 'products.id', '=', 'purchase_items.product_id')
             ->leftJoin('stock_usages', 'products.id', '=', 'stock_usages.product_id')
-            ->leftJoin('purchases', 'purchase_items.purchase_id', '=', 'purchases.id')
-            ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
-            ->groupBy('products.id', 'products.name', 'products.group', 'stock_usages.quantity_used', 'suppliers.name')
+            ->groupBy('products.id', 'products.name', 'products.group', 'stock_usages.quantity_used')
             ->orderByDesc('last_purchase_date');
+
+        // Only join with suppliers table if it exists
+        if (Schema::hasTable('suppliers')) {
+            $query->leftJoin('purchases', 'purchase_items.purchase_id', '=', 'purchases.id')
+                  ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
+                  ->addSelect('suppliers.name as supplier_name')
+                  ->groupBy('suppliers.name');
+        }
+
+        return $query;
     }
 
     public function getTotals()
