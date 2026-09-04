@@ -76,14 +76,20 @@ class TenantController extends Controller
         }
 
         // Create admin user for tenant
-        $admin = User::create([
-            'name' => $validated['admin_name'],
-            'email' => $validated['admin_email'],
-            'password' => Hash::make($validated['admin_password']),
-            'tenant_id' => $tenant->id,
-            'status' => 'active',
-        ]);
-        $admin->assignRole('admin');
+        try {
+            $admin = User::create([
+                'name' => $validated['admin_name'],
+                'email' => $validated['admin_email'],
+                'password' => Hash::make($validated['admin_password']),
+                'tenant_id' => $tenant->id,
+                'status' => 'active',
+            ]);
+            $admin->assignRole('admin');
+        } catch (\Exception $e) {
+            // Log the error and continue - tenant is created but user creation failed
+            \Log::error('Failed to create admin user for tenant: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Tenant created but failed to create admin user: ' . $e->getMessage());
+        }
 
         $redirectRoute = request()->routeIs('superadmin.*') ? 'superadmin.tenants.index' : 'admin.tenants.index';
         return redirect()->route($redirectRoute)->with('success', 'Tenant created successfully.');
