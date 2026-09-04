@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 
 class Product extends Model
 {
@@ -96,7 +97,10 @@ class Product extends Model
 
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        if (Schema::hasColumn('products', 'status')) {
+            return $query->where('status', 'active');
+        }
+        return $query;
     }
 
     public function scopeLowStock($query)
