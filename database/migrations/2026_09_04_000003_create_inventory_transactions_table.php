@@ -33,7 +33,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['product_id', 'tenant_id']);
-            $table->index(['transaction_type', 'reference_type', 'reference_id']);
+            $table->index(['transaction_type', 'reference_type', 'reference_id'], 'trx_ref_index');
             $table->index('created_at');
         });
     }
