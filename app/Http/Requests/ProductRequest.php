@@ -30,7 +30,12 @@ class ProductRequest extends FormRequest
             ],
 
             'unit_id'=>['required','exists:units,id'],
-            'description'=>['nullable','string','max:255'],            
+            'description'=>['nullable','string','max:255'],
+            'group'=>['nullable','string','max:255'],
+            'default_price'=>['nullable','numeric','min:0'],
+            'multiple_unit'=>['nullable','boolean'],
+            'opening_stock_quantity'=>['nullable','numeric','min:0'],
+            'opening_stock_rate'=>['nullable','numeric','min:0'],
         ];
     }
 }
