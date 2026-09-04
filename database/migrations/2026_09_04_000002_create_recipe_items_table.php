@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['recipe_id', 'product_id']);
+            $table->index(['recipe_id', 'product_id'], 'recipe_product_index');
         });
     }
 

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['stock_adjustment_id', 'product_id']);
+            $table->index(['stock_adjustment_id', 'product_id'], 'sa_product_index');
         });
     }
 
