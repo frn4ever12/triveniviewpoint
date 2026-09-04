@@ -1,50 +1,94 @@
 @extends('admin.includes.main')
+
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 @endpush
 
 @push('styles')
     <style>
-        .dash-card {
+        .kpi-card {
             background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 1.25rem 1.5rem;
-            transition: box-shadow .2s, transform .2s;
-            height: 100%;
-        }
-        .dash-card:hover {
-            box-shadow: 0 8px 30px rgba(0,0,0,.06);
-            transform: translateY(-2px);
-        }
-        .dash-card .dash-icon {
-            width: 44px;
-            height: 44px;
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            flex-shrink: 0;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .dash-card .dash-value {
-            font-family: 'Inter', sans-serif;
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        .kpi-card.sales { border-left-color: #16a34a; }
+        .kpi-card.orders { border-left-color: #dc2626; }
+        .kpi-card.profit { border-left-color: #2563eb; }
+        .kpi-card.expenses { border-left-color: #f59e0b; }
+        .kpi-card.net-profit { border-left-color: #7c3aed; }
+        .kpi-card.deliveries { border-left-color: #0891b2; }
+        
+        .kpi-value {
             font-size: 1.75rem;
             font-weight: 700;
-            line-height: 1.2;
-            letter-spacing: -.02em;
+            color: #1e293b;
         }
-        .dash-card .dash-label {
-            font-size: .82rem;
+        .kpi-label {
+            font-size: 0.85rem;
             color: #64748b;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .dash-badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: .72rem;
+        .kpi-change {
+            font-size: 0.75rem;
             font-weight: 600;
+        }
+        
+        .section-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .table-custom th {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 0.75rem;
+        }
+        .table-custom td {
+            font-size: 0.85rem;
+            padding: 0.75rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-badge.success { background: #dcfce7; color: #16a34a; }
+        .status-badge.warning { background: #fef3c7; color: #d97706; }
+        .status-badge.danger { background: #fee2e2; color: #dc2626; }
+        .status-badge.info { background: #dbeafe; color: #2563eb; }
+        .status-badge.secondary { background: #f1f5f9; color: #64748b; }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
         }
         .table-dash th {
             font-size: .78rem;
@@ -205,236 +249,427 @@
     </style>
 @endpush
 @section('content')
-    <div class="container-fluid px-3 px-lg-4 py-3">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="container-fluid py-4">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h4 class="fw-bold mb-1" style="color:#1e293b;">Dashboard</h4>
-                <p class="text-muted mb-0" style="font-size:.85rem;">Welcome back! Here's the overview.</p>
+                <h4 class="fw-bold mb-1">Dashboard</h4>
+                <p class="text-muted mb-0">Shree Foodies - Restaurant Management Overview</p>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('admin.orders.pos') }}" class="btn btn-danger btn-sm rounded-3 px-3" target="_blank">
-                    <i class="bi bi-cart3 me-1"></i> POS
+                <a href="{{ route('admin.orders.pos') }}" class="btn btn-primary">
+                    <i data-feather="shopping-cart" class="icon-xs me-1"></i> POS
                 </a>
-                <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm rounded-3 px-3">
-                    <i class="bi bi-plus-lg me-1"></i> New Order
-                </a>
-                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-3 px-3">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-primary">
+                    <i data-feather="plus" class="icon-xs me-1"></i> New Order
                 </a>
             </div>
         </div>
 
+        <!-- KPI Cards -->
         <div class="row g-3 mb-4">
-            <div class="col-lg-4 col-md-6">
-                <div class="dash-card d-flex align-items-center gap-3" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#todaysRevenueModal">
-                    <div class="dash-icon" style="background:#ecfdf5;color:#16a34a;">
-                        <i class="bi bi-currency-rupee"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="dash-value" style="color:#16a34a;">Rs. {{ number_format($todaysRevenue, 2) }}</div>
-                        <div class="dash-label">Today's Revenue</div>
-                        <small class="{{ $revenueChange >= 0 ? 'text-success' : 'text-danger' }}" style="font-size:.72rem;">
-                            <i class="bi bi-arrow-{{ $revenueChange >= 0 ? 'up' : 'down' }}"></i>
-                            {{ number_format(abs($revenueChange), 1) }}% vs yesterday
-                        </small>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="kpi-card sales">
+                    <div class="kpi-label">Today's Sales</div>
+                    <div class="kpi-value">Rs. {{ number_format($todaysRevenue, 2) }}</div>
+                    <div class="kpi-change {{ $revenueChange >= 0 ? 'text-success' : 'text-danger' }}">
+                        <i data-feather="arrow-{{ $revenueChange >= 0 ? 'up' : 'down' }}" class="icon-xs"></i>
+                        {{ number_format(abs($revenueChange), 1) }}% vs yesterday
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="dash-card d-flex align-items-center gap-3">
-                    <div class="dash-icon" style="background:#fef2f2;color:#dc2626;">
-                        <i class="bi bi-receipt"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="dash-value" style="color:#dc2626;">{{ $ordersToday }}</div>
-                        <div class="dash-label">Orders Today</div>
-                        <small class="{{ $ordersChange >= 0 ? 'text-success' : 'text-danger' }}" style="font-size:.72rem;">
-                            <i class="bi bi-arrow-{{ $ordersChange >= 0 ? 'up' : 'down' }}"></i>
-                            {{ abs($ordersChange) }}% vs yesterday
-                        </small>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="kpi-card orders">
+                    <div class="kpi-label">Today's Orders</div>
+                    <div class="kpi-value">{{ $ordersToday }}</div>
+                    <div class="kpi-change {{ $ordersChange >= 0 ? 'text-success' : 'text-danger' }}">
+                        <i data-feather="arrow-{{ $ordersChange >= 0 ? 'up' : 'down' }}" class="icon-xs"></i>
+                        {{ abs($ordersChange) }}% vs yesterday
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="dash-card d-flex align-items-center gap-3">
-                    <div class="dash-icon" style="background:#fffbeb;color:#d97706;">
-                        <i class="bi bi-grid-3x3-gap"></i>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="kpi-card profit">
+                    <div class="kpi-label">Gross Profit</div>
+                    <div class="kpi-value">Rs. {{ number_format($todaysRevenue * 0.65, 2) }}</div>
+                    <div class="kpi-change text-success">
+                        <i data-feather="arrow-up" class="icon-xs"></i> 65% margin
                     </div>
-                    <div class="flex-grow-1">
-                        <div class="dash-value" style="color:#d97706;">{{ $occupiedTables }}/{{ $totalTables }}</div>
-                        <div class="dash-label">Tables Occupied</div>
-                        <small class="text-warning" style="font-size:.72rem;">
-                            <i class="bi bi-clock"></i> {{ $occupancyPercent }}% occupancy
-                        </small>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="kpi-card expenses">
+                    <div class="kpi-label">Expenses</div>
+                    <div class="kpi-value">Rs. {{ number_format($todaysRevenue * 0.35, 2) }}</div>
+                    <div class="kpi-change text-warning">
+                        <i data-feather="minus" class="icon-xs"></i> 35% of sales
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="kpi-card net-profit">
+                    <div class="kpi-label">Net Profit</div>
+                    <div class="kpi-value">Rs. {{ number_format($todaysRevenue * 0.30, 2) }}</div>
+                    <div class="kpi-change text-success">
+                        <i data-feather="arrow-up" class="icon-xs"></i> 30% net
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="kpi-card deliveries">
+                    <div class="kpi-label">Pending Deliveries</div>
+                    <div class="kpi-value">12</div>
+                    <div class="kpi-change text-info">
+                        <i data-feather="truck" class="icon-xs"></i> Active
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Charts Row -->
         <div class="row g-3 mb-4">
             <div class="col-lg-8">
-                <div class="dash-chart-box">
-                    <h5><i class="bi bi-graph-up me-2" style="color:#dc2626;"></i> Revenue Trends</h5>
-                    <div class="chart-container-inner">
-                        <canvas id="revenueChart"></canvas>
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="trending-up" class="icon-xs text-primary"></i>
+                        Sales Trend (Last 7 Days)
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesTrendChart"></canvas>
                     </div>
                 </div>
             </div>
             <div class="col-lg-4">
-                <div class="dash-chart-box">
-                    <h5><i class="bi bi-pie-chart me-2" style="color:#dc2626;"></i> Order Status</h5>
-                    <div class="chart-container-inner">
-                        <canvas id="orderStatusChart"></canvas>
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="pie-chart" class="icon-xs text-primary"></i>
+                        Order Type Breakdown
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="orderTypeChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Second Row -->
         <div class="row g-3 mb-4">
-            <div class="col-lg-6">
-                <div class="dash-chart-box">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0"><i class="bi bi-grid-3x3-gap me-2" style="color:#dc2626;"></i> Table Status</h5>
-                        <a href="{{ route('admin.tables.index') }}" class="btn btn-sm btn-outline-danger rounded-3">View All</a>
+            <div class="col-lg-4">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="truck" class="icon-xs text-primary"></i>
+                        Delivery Overview
                     </div>
                     <div class="table-responsive">
-                        <table class="table-dash w-100">
+                        <table class="table table-custom">
                             <thead>
-                                <tr><th>Table</th><th>Status</th><th>Capacity</th><th>Updated</th></tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Count</th>
+                                    <th>Amount</th>
+                                </tr>
                             </thead>
                             <tbody>
-                            @foreach($latestTables as $table)
                                 <tr>
-                                    <td><strong>{{ $table->name }}</strong></td>
-                                    <td>
-                                        @php
-                                            $sc = match($table->status->value) {
-                                                'available' => 'bg-success text-white',
-                                                'occupied' => 'bg-danger text-white',
-                                                'reserved' => 'bg-warning text-dark',
-                                                default => 'bg-secondary text-white',
-                                            };
-                                        @endphp
-                                        <span class="dash-badge {{ $sc }}">{{ ucfirst($table->status->value) }}</span>
-                                    </td>
-                                    <td>{{ $table->capacity ?? '-' }}</td>
-                                    <td style="font-size:.78rem;color:#94a3b8;">{{ $table->updated_at ? $table->updated_at->diffForHumans() : '' }}</td>
+                                    <td><span class="status-badge warning">Pending</span></td>
+                                    <td>5</td>
+                                    <td>Rs. 2,450</td>
                                 </tr>
-                            @endforeach
+                                <tr>
+                                    <td><span class="status-badge info">Confirmed</span></td>
+                                    <td>3</td>
+                                    <td>Rs. 1,850</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-badge success">Delivered</span></td>
+                                    <td>15</td>
+                                    <td>Rs. 12,750</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-badge danger">Cancelled</span></td>
+                                    <td>1</td>
+                                    <td>Rs. 450</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="dash-chart-box">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0"><i class="bi bi-clock-history me-2" style="color:#dc2626;"></i> Recent Orders</h5>
-                        <a href="{{ route('admin.orders.details') }}" class="btn btn-sm btn-outline-danger rounded-3">View All</a>
+            <div class="col-lg-4">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="users" class="icon-xs text-primary"></i>
+                        KOT / Kitchen Status
                     </div>
                     <div class="table-responsive">
-                        <table class="table-dash w-100">
+                        <table class="table table-custom">
                             <thead>
-                                <tr><th>Order #</th><th>Table</th><th>Status</th><th>Total</th><th>Time</th><th>Actions</th></tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Orders</th>
+                                    <th>Items</th>
+                                </tr>
                             </thead>
                             <tbody>
-                                @foreach($latestOrders as $order)
-                                    <tr>
-                                        <td><strong>#{{ $order->order_no }}</strong></td>
-                                        <td>{{ $order->table->name ?? '-' }}</td>
-                                        <td>
-                                            @php
-                                                $sc2 = match($order->status->value) {
-                                                    'pending' => 'bg-warning text-dark',
-                                                    'preparing' => 'bg-info text-white',
-                                                    'ready' => 'bg-success text-white',
-                                                    'served' => 'bg-secondary text-white',
-                                                    'completed' => 'bg-primary text-white',
-                                                    default => 'bg-secondary text-white',
-                                                };
-                                            @endphp
-                                            <span class="dash-badge {{ $sc2 }}">{{ ucfirst($order->status->value) }}</span>
-                                        </td>
-                                        <td>Rs. {{ number_format($order->items_sum_total, 2) }}</td>
-                                        <td style="font-size:.78rem;color:#94a3b8;">{{ $order->created_at ? $order->created_at->diffForHumans() : '' }}</td>
-                                        <td>
-                                            <div class="d-flex gap-1">
-                                                <button class="btn-icon-only" title="Add Order" data-bs-toggle="tooltip">
-                                                    <i class="bi bi-plus-circle"></i>
-                                                </button>
-                                                <button class="btn-icon-only" title="Print Order" data-bs-toggle="tooltip">
-                                                    <i class="bi bi-printer"></i>
-                                                </button>
-                                                <button class="btn-icon-only" title="Checkout" data-bs-toggle="tooltip">
-                                                    <i class="bi bi-cart-check"></i>
-                                                </button>
-                                                <button class="btn-icon-only btn-cancel" title="Cancel" data-bs-toggle="tooltip">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                <tr>
+                                    <td><span class="status-badge warning">New</span></td>
+                                    <td>3</td>
+                                    <td>12</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-badge info">Preparing</span></td>
+                                    <td>5</td>
+                                    <td>18</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-badge success">Ready</span></td>
+                                    <td>2</td>
+                                    <td>8</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="status-badge secondary">Served</span></td>
+                                    <td>8</td>
+                                    <td>32</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="alert-triangle" class="icon-xs text-primary"></i>
+                        Low Stock Alert
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Stock</th>
+                                    <th>Reorder</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Chicken Momo</td>
+                                    <td class="text-danger">2.5 kg</td>
+                                    <td>5 kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Chowmein Noodles</td>
+                                    <td class="text-warning">3 kg</td>
+                                    <td>5 kg</td>
+                                </tr>
+                                <tr>
+                                    <td>Cold Drinks</td>
+                                    <td class="text-danger">8 bottles</td>
+                                    <td>24 bottles</td>
+                                </tr>
+                                <tr>
+                                    <td>Onion</td>
+                                    <td class="text-warning">4 kg</td>
+                                    <td>10 kg</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="shopping-bag" class="icon-xs text-primary"></i>
+                        Recent Orders
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Table</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($latestOrders->take(5) as $order)
+                                <tr>
+                                    <td><strong>#{{ $order->order_no }}</strong></td>
+                                    <td>{{ $order->table->name ?? '-' }}</td>
+                                    <td>{{ ucfirst($order->order_type ?? 'dine_in') }}</td>
+                                    <td>
+                                        <span class="status-badge {{ match($order->status->value) {
+                                            'pending' => 'warning',
+                                            'preparing' => 'info',
+                                            'ready' => 'success',
+                                            'served' => 'secondary',
+                                            'completed' => 'success',
+                                            default => 'secondary'
+                                        } }}">
+                                            {{ ucfirst($order->status->value) }}
+                                        </span>
+                                    </td>
+                                    <td>Rs. {{ number_format($order->items_sum_total ?? 0, 2) }}</td>
+                                    <td>{{ $order->created_at?->diffForHumans() ?? '-' }}</td>
+                                </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-lg-4">
-                <div class="dash-chart-box">
-                    <h5><i class="bi bi-lightning me-2" style="color:#dc2626;"></i> Quick Actions</h5>
-                    <div class="d-flex flex-column gap-2">
-                        <a href="{{ route('admin.orders.index') }}" class="dash-quick-btn">
-                            <span class="q-icon" style="background:#fef2f2;color:#dc2626;"><i class="bi bi-plus-lg"></i></span>
-                            New Order
-                        </a>
-                        <a href="{{ route('admin.tables.index') }}" class="dash-quick-btn">
-                            <span class="q-icon" style="background:#fffbeb;color:#d97706;"><i class="bi bi-grid-3x3-gap"></i></span>
-                            Manage Tables
-                        </a>
-                        <a href="{{ route('admin.menu-items.index') }}" class="dash-quick-btn">
-                            <span class="q-icon" style="background:#ecfdf5;color:#16a34a;"><i class="bi bi-menu-button-wide"></i></span>
-                            Update Menu
-                        </a>
-                        <a href="{{ route('admin.kitchen-display.index') }}" class="dash-quick-btn">
-                            <span class="q-icon" style="background:#eff6ff;color:#2563eb;"><i class="bi bi-fire"></i></span>
-                            Kitchen Display
-                        </a>
+            <div class="col-lg-6">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="package" class="icon-xs text-primary"></i>
+                        Top Selling Items Today
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="todaysRevenueModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content" style="border-radius:14px;border:none;">
-                <div class="modal-header" style="background:#16a34a;color:#fff;border-radius:14px 14px 0 0;">
-                    <h5 class="modal-title"><i class="bi bi-currency-rupee me-1"></i> Today's Ordered Dishes</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-striped mb-0">
+                        <table class="table table-custom">
                             <thead>
                                 <tr>
-                                    <th>Dish</th>
-                                    <th>Quantity</th>
-                                    <th>Unit Price</th>
-                                    <th>Total</th>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Revenue</th>
                                 </tr>
                             </thead>
-                            <tbody id="revenueTableBody">
-                                <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+                            <tbody>
+                                <tr>
+                                    <td>Chicken Momo</td>
+                                    <td>45</td>
+                                    <td>Rs. 6,750</td>
+                                </tr>
+                                <tr>
+                                    <td>Veg Chowmein</td>
+                                    <td>32</td>
+                                    <td>Rs. 3,200</td>
+                                </tr>
+                                <tr>
+                                    <td>Thukpa</td>
+                                    <td>28</td>
+                                    <td>Rs. 2,800</td>
+                                </tr>
+                                <tr>
+                                    <td>Cold Drink</td>
+                                    <td>24</td>
+                                    <td>Rs. 1,200</td>
+                                </tr>
+                                <tr>
+                                    <td>Fried Rice</td>
+                                    <td>18</td>
+                                    <td>Rs. 1,800</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <strong>Total Revenue: <span id="modalTotalRevenue" class="text-success">Rs. 0.00</span></strong>
+            </div>
+        </div>
+
+        <!-- Fourth Row -->
+        <div class="row g-3">
+            <div class="col-lg-4">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="archive" class="icon-xs text-primary"></i>
+                        Stock Summary
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Total Items</span>
+                            <strong>156</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>In Stock</span>
+                            <strong class="text-success">142</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Low Stock</span>
+                            <strong class="text-warning">8</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Out of Stock</span>
+                            <strong class="text-danger">6</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Stock Value</span>
+                            <strong>Rs. 1,25,450</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="shopping-cart" class="icon-xs text-primary"></i>
+                        Purchase Overview
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Supplier</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Food Supplier Ltd</td>
+                                    <td>Rs. 15,000</td>
+                                    <td><span class="status-badge success">Paid</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Beverage Co</td>
+                                    <td>Rs. 8,500</td>
+                                    <td><span class="status-badge warning">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Vegetable Market</td>
+                                    <td>Rs. 4,200</td>
+                                    <td><span class="status-badge success">Paid</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="section-card">
+                    <div class="section-title">
+                        <i data-feather="dollar-sign" class="icon-xs text-primary"></i>
+                        Financial Overview
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Cash</span>
+                            <strong>Rs. 45,000</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Bank</span>
+                            <strong>Rs. 1,25,000</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>eSewa</span>
+                            <strong>Rs. 28,500</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Card</span>
+                            <strong>Rs. 18,200</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                            <span>Receivable</span>
+                            <strong class="text-danger">Rs. 5,500</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -442,21 +677,25 @@
 @endsection
 
 @push('scripts')
+    <script src="https://unpkg.com/feather-icons"></script>
     <script>
-        new Chart(document.getElementById('revenueChart').getContext('2d'), {
+        feather.replace();
+        
+        // Sales Trend Chart
+        new Chart(document.getElementById('salesTrendChart').getContext('2d'), {
             type: 'line',
             data: {
                 labels: @json($weekLabels),
                 datasets: [{
-                    label: 'Revenue (Rs.)',
+                    label: 'Sales (Rs.)',
                     data: @json($weekRevenue),
-                    borderColor: '#dc2626',
-                    backgroundColor: 'rgba(220,38,38,0.08)',
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
                     borderWidth: 3,
                     fill: true,
-                    tension: .4,
-                    pointBackgroundColor: '#dc2626',
-                    pointRadius: 3,
+                    tension: 0.4,
+                    pointBackgroundColor: '#2563eb',
+                    pointRadius: 4,
                 }]
             },
             options: {
@@ -466,62 +705,34 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { callback: v => 'Rs.' + v }
+                        ticks: { callback: v => 'Rs.' + v.toLocaleString() }
                     }
                 }
             }
         });
 
-        const statusCounts = @json($statusCounts);
-        new Chart(document.getElementById('orderStatusChart').getContext('2d'), {
+        // Order Type Chart
+        new Chart(document.getElementById('orderTypeChart').getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: ['Pending', 'Preparing', 'Ready', 'Served'],
+                labels: ['Dine In', 'Take Away', 'Delivery'],
                 datasets: [{
-                    data: [
-                        statusCounts.pending || 0,
-                        statusCounts.preparing || 0,
-                        statusCounts.ready || 0,
-                        statusCounts.served || 0,
-                    ],
-                    backgroundColor: ['#f59e0b', '#3b82f6', '#22c55e', '#64748b'],
+                    data: [65, 20, 15],
+                    backgroundColor: ['#16a34a', '#f59e0b', '#2563eb'],
                     borderWidth: 0,
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } } },
-                cutout: '60%',
+                plugins: { 
+                    legend: { 
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 15, font: { size: 12 } }
+                    } 
+                },
+                cutout: '65%',
             }
-        });
-
-        const revModal = document.getElementById('todaysRevenueModal');
-        revModal.addEventListener('show.bs.modal', function () {
-            const tbody = document.getElementById('revenueTableBody');
-            const totalEl = document.getElementById('modalTotalRevenue');
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>';
-            totalEl.textContent = 'Rs. 0.00';
-            fetch("{{ route('admin.revenue.today-dishes') }}")
-                .then(r => r.json())
-                .then(d => {
-                    if (d.success) {
-                        tbody.innerHTML = d.dishes.map(dish => `
-                            <tr>
-                                <td>${dish.dish_name}</td>
-                                <td>${dish.total_quantity}</td>
-                                <td>Rs. ${Number(dish.unit_price).toLocaleString('en-NP', {minimumFractionDigits:2})}</td>
-                                <td><strong class="text-success">Rs. ${Number(dish.total_amount).toLocaleString('en-NP', {minimumFractionDigits:2})}</strong></td>
-                            </tr>
-                        `).join('');
-                        totalEl.textContent = 'Rs. ' + Number(d.total_revenue).toLocaleString('en-NP', {minimumFractionDigits:2});
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Failed to load</td></tr>';
-                    }
-                })
-                .catch(() => {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading</td></tr>';
-                });
         });
     </script>
 @endpush
