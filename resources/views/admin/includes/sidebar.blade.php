@@ -122,7 +122,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link has-arrow" href="{{ route('admin.reports.stock.summary') }}">
+                            <a class="nav-link has-arrow {{ request()->routeIs('admin.reports.stock_report') ? 'active' : '' }}" href="{{ route('admin.reports.stock_report') }}">
                                 Stock
                             </a>
                         </li>
