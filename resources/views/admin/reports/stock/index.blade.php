@@ -63,8 +63,11 @@
 
     {{-- Stock DataTable --}}
     <div class="card">
-        <div class="card-header bg-white">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Stock Inventory Management</h5>
+            <a href="{{ route('admin.products.create') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add New Item
+            </a>
         </div>
         <div class="card-body py-0 px-2">
             <div class="table-responsive">
