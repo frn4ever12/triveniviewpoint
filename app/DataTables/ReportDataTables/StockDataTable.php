@@ -18,8 +18,12 @@ class StockDataTable extends DataTable
         return datatables()
             ->eloquent($query)
             ->addIndexColumn()
-            ->editColumn('total_used_quantity', fn($item) => number_format($item->total_used_quantity))
-            ->editColumn('current_stock', fn($item) => number_format($item->current_stock))
+            ->editColumn('product_group', fn($item) => $item->product_group ?? '-')
+            ->editColumn('total_used_quantity', fn($item) => number_format($item->total_used_quantity, 2))
+            ->editColumn('total_purchased', fn($item) => number_format($item->total_purchased, 2))
+            ->editColumn('current_stock', fn($item) => number_format($item->current_stock, 2))
+            ->addColumn('stock_value', fn($item) => 'Rs. ' . number_format($item->current_stock * $item->avg_unit_rate, 2))
+            ->editColumn('supplier_name', fn($item) => $item->supplier_name ?? '-')
             ->addColumn('status', function ($item) {
                 $stock = $item->current_stock;
                 if ($stock == 0) {
@@ -31,9 +35,9 @@ class StockDataTable extends DataTable
             })
             ->addColumn('action', function ($item) {
                 return '
-                    <button type="button" 
-                        class="btn btn-sm btn-primary editStockBtn" 
-                        data-id="' . $item->product_id . '" 
+                    <button type="button"
+                        class="btn btn-sm btn-primary editStockBtn"
+                        data-id="' . $item->product_id . '"
                         data-name="' . e($item->product_name) . '"
                         data-current="' . $item->current_stock . '">
                         <i class="bi bi-pencil-square"></i> Manage
@@ -49,15 +53,19 @@ class StockDataTable extends DataTable
             ->select([
                 'products.id as product_id',
                 'products.name as product_name',
+                'products.group as product_group',
                 DB::raw('COALESCE(SUM(purchase_items.quantity), 0) as total_purchased'),
                 DB::raw('COALESCE(stock_usages.quantity_used, 0) as total_used_quantity'),
                 DB::raw('(COALESCE(SUM(purchase_items.quantity), 0) - COALESCE(stock_usages.quantity_used, 0)) as current_stock'),
                 DB::raw('ROUND(AVG(purchase_items.unit_rate), 2) as avg_unit_rate'),
                 DB::raw('MAX(purchase_items.created_at) as last_purchase_date'),
+                'suppliers.name as supplier_name',
             ])
             ->leftJoin('purchase_items', 'products.id', '=', 'purchase_items.product_id')
             ->leftJoin('stock_usages', 'products.id', '=', 'stock_usages.product_id')
-            ->groupBy('products.id', 'products.name', 'stock_usages.quantity_used')
+            ->leftJoin('purchases', 'purchase_items.purchase_id', '=', 'purchases.id')
+            ->leftJoin('suppliers', 'purchases.supplier_id', '=', 'suppliers.id')
+            ->groupBy('products.id', 'products.name', 'products.group', 'stock_usages.quantity_used', 'suppliers.name')
             ->orderByDesc('last_purchase_date');
     }
 
@@ -105,11 +113,15 @@ class StockDataTable extends DataTable
     protected function getColumns(): array
     {
         return [
-            Column::computed('DT_RowIndex')->title('S.N')->width(60)->addClass('text-center'),
-            Column::make('product_name')->title('Product Name')->width(250),
-            Column::make('current_stock')->title('Current Stock')->width(150)->addClass('text-center'),
-            Column::computed('status')->title('Stock Status')->width(150)->addClass('text-center'),
-            Column::computed('action')->title('Actions')->exportable(false)->printable(false)->width(120)->addClass('text-center'),
+            Column::computed('DT_RowIndex')->title('S.N')->width(50)->addClass('text-center'),
+            Column::make('product_name')->title('Stock Item')->width(200),
+            Column::make('product_group')->title('Group')->width(120),
+            Column::make('total_used_quantity')->title('Consumption Rate')->width(120)->addClass('text-center'),
+            Column::make('total_purchased')->title('Opening')->width(100)->addClass('text-center'),
+            Column::make('current_stock')->title('Closing')->width(100)->addClass('text-center'),
+            Column::computed('stock_value')->title('Stock Value')->width(120)->addClass('text-center'),
+            Column::make('supplier_name')->title('Supplier')->width(150),
+            Column::computed('action')->title('Actions')->exportable(false)->printable(false)->width(100)->addClass('text-center'),
         ];
     }
 
