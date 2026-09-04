@@ -40,7 +40,7 @@ class TenantController extends Controller
             'domain' => 'nullable|string|unique:tenants',
             'plan_id' => 'required|exists:subscription_plans,id',
             'admin_name' => 'required|string|max:255',
-            'admin_email' => 'required|email|unique:users',
+            'admin_email' => 'required|email|unique:users,email',
             'admin_password' => 'required|string|min:8',
         ]);
 
