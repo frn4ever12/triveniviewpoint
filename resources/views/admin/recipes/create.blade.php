@@ -14,7 +14,7 @@
                         <label class="form-label">Menu Item</label>
                         <select name="menu_item_id" class="form-select" required>
                             <option value="">Select Menu Item</option>
-                            @foreach(\App\Models\MenuItem::all() as $item)
+                            @foreach($menuItems as $item)
                                 <option value="{{ $item->id }}">{{ $item->name }} - {{ number_format($item->price, 2) }}</option>
                             @endforeach
                         </select>

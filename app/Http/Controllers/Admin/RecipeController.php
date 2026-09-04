@@ -17,11 +17,11 @@ class RecipeController extends Controller
         return view('admin.recipes.index', compact('recipes'));
     }
 
-    public function create($menuItemId)
+    public function create()
     {
-        $menuItem = MenuItem::findOrFail($menuItemId);
+        $menuItems = MenuItem::all();
         $products = Product::active()->get();
-        return view('admin.recipes.create', compact('menuItem', 'products'));
+        return view('admin.recipes.create', compact('menuItems', 'products'));
     }
 
     public function store(Request $request)
