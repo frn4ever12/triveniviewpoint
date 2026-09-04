@@ -50,22 +50,34 @@ class StockDataTable extends DataTable
 
     public function query(Product $model): QueryBuilder
     {
+        $hasGroupColumn = Schema::hasColumn('products', 'group');
+
+        $selects = [
+            'products.id as product_id',
+            'products.name as product_name',
+            DB::raw('COALESCE(SUM(purchase_items.quantity), 0) as total_purchased'),
+            DB::raw('COALESCE(stock_usages.quantity_used, 0) as total_used_quantity'),
+            DB::raw('(COALESCE(SUM(purchase_items.quantity), 0) - COALESCE(stock_usages.quantity_used, 0)) as current_stock'),
+            DB::raw('ROUND(AVG(purchase_items.unit_rate), 2) as avg_unit_rate'),
+            DB::raw('MAX(purchase_items.created_at) as last_purchase_date'),
+            DB::raw('NULL as supplier_name'),
+        ];
+
+        if ($hasGroupColumn) {
+            $selects[] = 'products.group as product_group';
+        }
+
         $query = $model->newQuery()
-            ->select([
-                'products.id as product_id',
-                'products.name as product_name',
-                'products.group as product_group',
-                DB::raw('COALESCE(SUM(purchase_items.quantity), 0) as total_purchased'),
-                DB::raw('COALESCE(stock_usages.quantity_used, 0) as total_used_quantity'),
-                DB::raw('(COALESCE(SUM(purchase_items.quantity), 0) - COALESCE(stock_usages.quantity_used, 0)) as current_stock'),
-                DB::raw('ROUND(AVG(purchase_items.unit_rate), 2) as avg_unit_rate'),
-                DB::raw('MAX(purchase_items.created_at) as last_purchase_date'),
-                DB::raw('NULL as supplier_name'),
-            ])
+            ->select($selects)
             ->leftJoin('purchase_items', 'products.id', '=', 'purchase_items.product_id')
-            ->leftJoin('stock_usages', 'products.id', '=', 'stock_usages.product_id')
-            ->groupBy('products.id', 'products.name', 'products.group', 'stock_usages.quantity_used')
-            ->orderByDesc('last_purchase_date');
+            ->leftJoin('stock_usages', 'products.id', '=', 'stock_usages.product_id');
+
+        $groupBy = ['products.id', 'products.name', 'stock_usages.quantity_used'];
+        if ($hasGroupColumn) {
+            $groupBy[] = 'products.group';
+        }
+        $query->groupBy($groupBy)
+              ->orderByDesc('last_purchase_date');
 
         // Only join with suppliers table if it exists
         if (Schema::hasTable('suppliers')) {
