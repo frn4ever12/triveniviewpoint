@@ -31,7 +31,7 @@
                     <i data-feather="utensils" class="me-2"></i>
                 @endif
                 <div>
-                    <span class="d-block fw-bold">Shree Foodies</span>
+                    <span class="d-block fw-bold">{{ $currentTenant->name ?? 'Restaurant' }}</span>
                     <span class="d-block fs-6 opacity-75">Restaurant Management</span>
                 </div>
             </div>
