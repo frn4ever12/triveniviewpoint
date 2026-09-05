@@ -14,7 +14,7 @@
 <nav class="navbar-vertical navbar bg-danger">
     <div>
         <a class="navbar-brand" href="{{ route('dashboard') }}">
-            <span>{{ $siteName ?? 'dmcrestro' }}</span>
+            <span>{{ auth()->user()?->tenant?->name ?? $siteName ?? 'Restaurant' }}</span>
         </a>
     </div>
     
