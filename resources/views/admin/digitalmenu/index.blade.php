@@ -61,8 +61,8 @@
     justify-content: center;
 }
 .sticker-qr img, .sticker-qr canvas {
-    width: 54px !important;
-    height: 54px !important;
+    width: 80px !important;
+    height: 80px !important;
 }
 .sticker-footer {
     font-size: 6.5px;
@@ -103,12 +103,12 @@
 <script>
 @foreach ($tables as $table)
 new QRCode(document.getElementById("qr-{{ $table->id }}"), {
-    text: "{{ route('digitalmenu-table', ['slug' => auth()->user()->tenant->slug ?? 'default', 'table' => \Vinkla\Hashids\Facades\Hashids::encode($table->id)]) }}",
-    width: 54,
-    height: 54,
+    text: "{{ str_replace('127.0.0.1:8000', '192.168.1.84:8000', route('digitalmenu-table', ['slug' => auth()->user()->tenant->slug ?? 'default', 'table' => $table->id])) }}",
+    width: 80,
+    height: 80,
     colorDark: "#000000",
     colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
+    correctLevel: QRCode.CorrectLevel.L
 });
 @endforeach
 </script>

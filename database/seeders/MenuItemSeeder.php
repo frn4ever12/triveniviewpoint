@@ -516,7 +516,10 @@ class MenuItemSeeder extends Seeder
         ];
 
         foreach ($items as $data) {
-            $menuItem = MenuItem::updateOrCreate(['slug' => $data['slug']], $data);
+            $menuItem = MenuItem::updateOrCreate(
+                ['slug' => $data['slug']],
+                array_merge($data, ['tenant_id' => 1])
+            );
             
             // Add image if menu item exists and doesn't have one
             if ($menuItem && !$menuItem->getFirstMedia('image')) {

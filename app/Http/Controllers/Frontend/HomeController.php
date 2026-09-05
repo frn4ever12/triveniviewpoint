@@ -141,13 +141,24 @@ class HomeController extends Controller
         $tableRecord = null;
         if ($table) {
             try {
+                // Try hashids first for backward compatibility
                 $tableId = Hashids::decode($table);
-                if (empty($tableId)) {
+                if (!empty($tableId)) {
+                    $tableRecord = \App\Models\Table::where('id', $tableId[0])
+                        ->where('tenant_id', $tenant->id)
+                        ->first();
+                }
+                
+                // If hashids failed, try plain ID
+                if (!$tableRecord && is_numeric($table)) {
+                    $tableRecord = \App\Models\Table::where('id', $table)
+                        ->where('tenant_id', $tenant->id)
+                        ->first();
+                }
+                
+                if (!$tableRecord) {
                     abort(404);
                 }
-                $tableRecord = \App\Models\Table::where('id', $tableId[0])
-                    ->where('tenant_id', $tenant->id)
-                    ->firstOrFail();
             } catch (\Exception $e) {
                 abort(404);
             }

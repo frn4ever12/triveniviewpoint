@@ -24,7 +24,10 @@ class TableSeeder extends Seeder
             ['name'=>'Table-8', 'status'=>'available'],
         ];
         foreach ($datas as $data) {
-            \App\Models\Table::updateOrCreate(['name' => $data['name']], $data);
+            \App\Models\Table::updateOrCreate(
+                ['name' => $data['name']],
+                array_merge($data, ['tenant_id' => 1])
+            );
         }
     }
 }

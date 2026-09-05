@@ -93,7 +93,10 @@ class CategorySeeder extends Seeder
         ];
 
         foreach ($categories as $data) {
-            Category::updateOrCreate(['slug' => $data['slug']], $data);
+            Category::updateOrCreate(
+                ['slug' => $data['slug']],
+                array_merge($data, ['tenant_id' => 1])
+            );
         }
     }
 }
