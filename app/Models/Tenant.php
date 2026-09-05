@@ -27,10 +27,20 @@ class Tenant extends Model implements HasMedia
         'logo',
         'status',
         'trial_ends_at',
+        'vat_percent',
+        'service_charge_percent',
+        'default_payment_method',
+        'auto_print_receipt',
+        'receipt_footer',
+        'enable_kot',
+        'enable_table_reservation',
     ];
 
     protected $casts = [
         'trial_ends_at' => 'datetime',
+        'auto_print_receipt' => 'boolean',
+        'enable_kot' => 'boolean',
+        'enable_table_reservation' => 'boolean',
     ];
 
     public function getSlugOptions(): SlugOptions
