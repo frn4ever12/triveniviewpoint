@@ -87,6 +87,114 @@
             position: relative;
             height: 250px;
         }
+
+        /* Responsive Styles */
+        @media (max-width: 991.98px) {
+            .kpi-value {
+                font-size: 1.5rem;
+            }
+            .kpi-label {
+                font-size: 0.75rem;
+            }
+            .section-card {
+                padding: 1rem;
+            }
+            .chart-container {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .kpi-value {
+                font-size: 1.25rem;
+            }
+            .kpi-label {
+                font-size: 0.7rem;
+            }
+            .kpi-card {
+                padding: 1rem;
+            }
+            .section-card {
+                padding: 0.75rem;
+            }
+            .section-title {
+                font-size: 0.9rem;
+            }
+            .table-custom th,
+            .table-custom td {
+                font-size: 0.75rem;
+                padding: 0.5rem;
+            }
+            .chart-container {
+                height: 180px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .kpi-value {
+                font-size: 1.1rem;
+            }
+            .kpi-label {
+                font-size: 0.65rem;
+            }
+            .kpi-change {
+                font-size: 0.65rem;
+            }
+            .kpi-card {
+                padding: 0.75rem;
+            }
+            .section-card {
+                padding: 0.5rem;
+            }
+            .section-title {
+                font-size: 0.85rem;
+            }
+            .table-custom th,
+            .table-custom td {
+                font-size: 0.7rem;
+                padding: 0.4rem;
+            }
+            .status-badge {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.5rem;
+            }
+            .chart-container {
+                height: 150px;
+            }
+        }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 767.98px) {
+            .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start !important;
+            }
+            .d-flex.gap-2 {
+                flex-direction: column;
+                width: 100%;
+            }
+            .d-flex.gap-2 .btn {
+                width: 100%;
+            }
+        }
+
+        /* Table horizontal scroll on mobile */
+        @media (max-width: 767.98px) {
+            .table-responsive {
+                border-radius: 8px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* Hide less important columns on very small screens */
+        @media (max-width: 575.98px) {
+            .table-custom th:nth-child(n+4),
+            .table-custom td:nth-child(n+4) {
+                display: none;
+            }
+        }
     </style>
 @endpush
 
