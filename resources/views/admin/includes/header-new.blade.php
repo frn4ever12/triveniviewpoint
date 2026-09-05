@@ -3,39 +3,101 @@
     $bsDate = \App\Helpers\NepaliDateHelper::convertToBS(\Carbon\Carbon::now());
 @endphp
 
+<style>
+    @media (max-width: 991.98px) {
+        .header {
+            padding: 0.5rem 1rem;
+        }
+        .navbar {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .navbar-nav {
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .nav-item {
+            margin-right: 0;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .header {
+            padding: 0.5rem;
+        }
+        .navbar {
+            padding: 0.5rem 0;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+        .navbar-nav {
+            gap: 0.25rem;
+            flex-wrap: nowrap;
+        }
+        .nav-item {
+            margin-right: 0;
+        }
+        .dropdown-menu {
+            position: fixed !important;
+            top: auto !important;
+            right: 1rem !important;
+            left: auto !important;
+            width: auto !important;
+            max-width: 280px !important;
+            z-index: 9999 !important;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .header {
+            padding: 0.25rem 0.5rem;
+        }
+        .navbar {
+            padding: 0.25rem 0;
+        }
+        .navbar-nav {
+            gap: 0.15rem;
+        }
+        .btn-sm {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+        }
+        .badge {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.4rem;
+        }
+        .nav-link {
+            padding: 0.25rem 0.5rem;
+        }
+        #nav-toggle {
+            padding: 0.25rem 0.5rem;
+        }
+    }
+</style>
+
 <div class="header bg-white shadow-sm">
     <nav class="navbar navbar-expand-lg">
         <a id="nav-toggle" href="#" class="btn btn-light btn-sm me-3">
             <i data-feather="menu" class="nav-icon icon-xs"></i>
         </a>
 
-        <!-- Restaurant Branding & Branch Selector -->
+        <!-- Restaurant Branding -->
         <div class="d-flex align-items-center">
             <div class="me-4 d-none d-md-block">
                 <h5 class="mb-0 fw-bold text-primary">{{ $currentTenant->name ?? 'Restaurant' }}</h5>
                 <small class="text-muted">Restaurant Management</small>
             </div>
-            
-            @if($currentTenant)
-            <div class="dropdown">
-                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i data-feather="map-pin" class="icon-xs me-1"></i>
-                    {{ $currentTenant->name ?? 'Main Branch' }}
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#">Main Branch</a></li>
-                    <li><a class="dropdown-item" href="#">Thamel Branch</a></li>
-                    <li><a class="dropdown-item" href="#">Lazimpat Branch</a></li>
-                </ul>
-            </div>
-            @endif
         </div>
 
         <!-- Right Side -->
         <ul class="navbar-nav navbar-right-wrap ms-auto d-flex align-items-center">
             
             <!-- BS & AD Dates -->
-            <li class="nav-item me-3 d-none d-lg-block">
+            <li class="nav-item me-3 d-none d-xl-block">
                 <div class="text-end">
                     <small class="d-block fw-bold text-danger">{{ $bsDate ?? '2081-02-25' }} BS</small>
                     <small class="d-block text-muted">{{ \Carbon\Carbon::now()->format('Y-m-d') }} AD</small>
@@ -43,7 +105,7 @@
             </li>
 
             <!-- Global Search -->
-            <li class="nav-item me-3">
+            <li class="nav-item me-3 d-none d-md-block">
                 <div class="input-group input-group-sm" style="width: 250px;">
                     <input type="text" class="form-control" placeholder="Search orders, items, customers...">
                     <button class="btn btn-outline-secondary" type="button">
@@ -60,7 +122,7 @@
             </li>
 
             <!-- Notifications -->
-            <li class="nav-item me-3 dropdown">
+            <li class="nav-item me-3 dropdown d-none d-md-block">
                 <a class="nav-link position-relative" href="#" data-bs-toggle="dropdown">
                     <i data-feather="bell" class="icon-xs"></i>
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 10px;">

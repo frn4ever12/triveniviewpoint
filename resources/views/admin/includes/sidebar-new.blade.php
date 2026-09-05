@@ -3,13 +3,13 @@
     $enabledModules = $currentTenant ? $currentTenant->enabled_modules : [];
     $trialEndsAt = $currentTenant ? $currentTenant->trial_ends_at : null;
     $daysRemaining = $trialEndsAt ? round(now()->diffInDays($trialEndsAt, false)) : 0;
-    
+
     // Get package name from subscription
     $packageName = 'Free Trial';
     if ($currentTenant && $currentTenant->subscription) {
         $packageName = $currentTenant->subscription->plan->name ?? 'Free Trial';
     }
-    
+
     // Helper function to check if a submenu should be expanded
     $isSubmenuActive = function($routes) {
         foreach ($routes as $route) {
@@ -20,6 +20,29 @@
         return false;
     };
 @endphp
+
+<style>
+    .nav-arrow {
+        transition: transform 0.2s ease;
+        opacity: 0.7;
+    }
+    .nav-link[aria-expanded="true"] .nav-arrow {
+        transform: rotate(180deg);
+    }
+    .nav-link.has-arrow {
+        position: relative;
+    }
+    .nav-link.has-arrow .nav-arrow {
+        display: inline-block !important;
+        width: 16px;
+        height: 16px;
+    }
+    @media (max-width: 767.98px) {
+        .nav-arrow {
+            display: inline-block !important;
+        }
+    }
+</style>
 
 <nav class="navbar-vertical navbar bg-dark">
     <div>

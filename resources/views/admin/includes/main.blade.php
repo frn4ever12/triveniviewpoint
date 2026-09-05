@@ -5,6 +5,65 @@
     @include('admin.includes.top')
     @yield('title')
     @stack('styles')
+    <style>
+        @media (max-width: 767.98px) {
+            #db-wrapper {
+                flex-direction: column;
+            }
+            .navbar-vertical {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                height: 100vh;
+                width: 280px;
+                z-index: 1040;
+                transition: left 0.3s ease;
+                overflow-y: auto;
+            }
+            .navbar-vertical.show {
+                left: 0;
+            }
+            #sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1039;
+            }
+            #sidebar-overlay.d-none {
+                display: none !important;
+            }
+            #page-content {
+                margin-left: 0 !important;
+                padding-top: 60px;
+                width: 100%;
+            }
+            .mt-10 {
+                margin-top: 1rem !important;
+            }
+            .pb-18 {
+                padding-bottom: 1rem !important;
+            }
+            .container-fluid {
+                padding: 0 0.75rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .navbar-vertical {
+                width: 260px;
+                left: -260px;
+            }
+            #page-content {
+                padding: 60px 0.5rem 1rem 0.5rem;
+            }
+            .container-fluid {
+                padding: 0 0.5rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -22,6 +81,7 @@
     
     <div id="db-wrapper">
         @include('admin.includes.sidebar-new')
+        <div id="sidebar-overlay" class="d-none"></div>
         <div id="page-content">
             @include('admin.includes.header-new')
             <div class="mt-10  pb-18">
@@ -29,6 +89,27 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navToggle = document.getElementById('nav-toggle');
+            const sidebar = document.querySelector('.navbar-vertical');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (navToggle && sidebar && overlay) {
+                navToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    sidebar.classList.toggle('show');
+                    overlay.classList.toggle('d-none');
+                });
+
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('show');
+                    overlay.classList.add('d-none');
+                });
+            }
+        });
+    </script>
     
     @include('admin.includes.bottom')
     @stack('scripts')
