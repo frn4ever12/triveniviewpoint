@@ -254,7 +254,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h4 class="fw-bold mb-1">Dashboard</h4>
-                <p class="text-muted mb-0">Shree Foodies - Restaurant Management Overview</p>
+                <p class="text-muted mb-0">{{ auth()->user()?->tenant?->name ?? 'Restaurant' }} - Restaurant Management Overview</p>
             </div>
             <div class="d-flex gap-2">
                 <a href="{{ route('admin.orders.pos') }}" class="btn btn-primary">

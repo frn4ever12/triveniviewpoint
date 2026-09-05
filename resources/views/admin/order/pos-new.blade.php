@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="restaurant-name" content="{{ $siteName ?? 'Shree Foodies' }}">
+    <meta name="restaurant-name" content="{{ $siteName ?? auth()->user()?->tenant?->name ?? 'Restaurant' }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>POS - Shree Foodies</title>
+    <title>POS - {{ auth()->user()?->tenant?->name ?? 'Restaurant' }}</title>
 
     @include('admin.includes.top')
 
@@ -397,7 +397,7 @@
             <div class="pos-brand">
                 <i data-feather="utensils"></i>
                 <div>
-                    <h5>Shree Foodies</h5>
+                    <h5>{{ auth()->user()?->tenant?->name ?? 'Restaurant' }}</h5>
                     <small>Restaurant POS</small>
                 </div>
             </div>

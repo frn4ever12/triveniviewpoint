@@ -12,7 +12,7 @@
         <!-- Restaurant Branding & Branch Selector -->
         <div class="d-flex align-items-center">
             <div class="me-4 d-none d-md-block">
-                <h5 class="mb-0 fw-bold text-primary">Shree Foodies</h5>
+                <h5 class="mb-0 fw-bold text-primary">{{ $currentTenant->name ?? 'Restaurant' }}</h5>
                 <small class="text-muted">Restaurant Management</small>
             </div>
             
