@@ -103,7 +103,7 @@
 <script>
 @foreach ($tables as $table)
 new QRCode(document.getElementById("qr-{{ $table->id }}"), {
-    text: "{{ route('digitalmenu-table', ['table' => \Vinkla\Hashids\Facades\Hashids::encode($table->id)]) }}",
+    text: "{{ route('digitalmenu-table', ['slug' => auth()->user()->tenant->slug ?? 'default', 'table' => \Vinkla\Hashids\Facades\Hashids::encode($table->id)]) }}",
     width: 54,
     height: 54,
     colorDark: "#000000",

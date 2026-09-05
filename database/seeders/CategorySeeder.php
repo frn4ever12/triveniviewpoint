@@ -47,6 +47,49 @@ class CategorySeeder extends Seeder
                 'status' => CommonStatusEnum::ACTIVE,
                 'is_featured' => false,
             ],
+            // Nepali Categories
+            [
+                'name' => 'Momo',
+                'slug' => 'momo',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => true,
+            ],
+            [
+                'name' => 'Chowmein/ChauMin',
+                'slug' => 'chowmein',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => true,
+            ],
+            [
+                'name' => 'Pakauda/Fryums',
+                'slug' => 'pakauda',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => false,
+            ],
+            [
+                'name' => 'Samosa',
+                'slug' => 'samosa',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => false,
+            ],
+            [
+                'name' => 'Nepali Thali',
+                'slug' => 'nepali-thali',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => true,
+            ],
+            [
+                'name' => 'Nepali Snacks',
+                'slug' => 'nepali-snacks',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => false,
+            ],
+            [
+                'name' => 'Tandoori Items',
+                'slug' => 'tandoori',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => true,
+            ],
         ];
 
         foreach ($categories as $data) {

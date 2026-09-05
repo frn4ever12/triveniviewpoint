@@ -9,6 +9,24 @@
         });
     }
 
+    // Sidebar submenu toggle with chevron rotation
+    if ($(".navbar-vertical .nav-link[data-bs-toggle='collapse']").length) {
+        $(".navbar-vertical .nav-link[data-bs-toggle='collapse']").on("click", function (e) {
+            var $this = $(this);
+            var $target = $($this.attr("data-bs-target"));
+            var isExpanded = $this.attr("aria-expanded") === "true";
+            
+            // Rotate chevron
+            setTimeout(function() {
+                if ($target.hasClass("show")) {
+                    $this.attr("aria-expanded", "true");
+                } else {
+                    $this.attr("aria-expanded", "false");
+                }
+            }, 10);
+        });
+    }
+
     if ($(".nav-scroller").length) {
         OverlayScrollbars(document.querySelectorAll(".nav-scroller"), {
             className: "os-theme-dark",
