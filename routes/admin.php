@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\PlanFeatureController;
+use App\Http\Controllers\Admin\StaffController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\CashierDashboardController;

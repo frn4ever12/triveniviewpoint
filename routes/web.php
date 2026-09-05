@@ -30,6 +30,9 @@ Route::get('/digitalmenu/{slug}', [HomeController::class, 'digitalmenu'])->name(
 Route::get('/digitalmenu/{slug}/{table}', [HomeController::class, 'digitalmenuTable'])->name('digitalmenu-table');
 
 // Checkout Route
+Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('checkout-dashboard');
 Route::post('/checkout/process/{table?}', [CheckoutController::class, 'process'])->name('checkout.process');
 // Order Routes
 Route::prefix('order')->name('order.')->group(function () {
