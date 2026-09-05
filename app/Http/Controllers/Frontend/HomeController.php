@@ -64,7 +64,10 @@ class HomeController extends Controller
         $tenantId = session('current_tenant_id');
         
         if ($slug) {
-            $tenant = Tenant::where('slug', $slug)->where('status', 'active')->firstOrFail();
+            $tenant = Tenant::where('slug', $slug)->where('status', 'active')->first();
+            if (!$tenant) {
+                abort(404);
+            }
             $tenantId = $tenant->id;
             session(['current_tenant_id' => $tenant->id]);
         }
@@ -107,7 +110,10 @@ class HomeController extends Controller
 
     public function digitalmenuTable($slug, $table)
     {
-        $tenant = Tenant::where('slug', $slug)->where('status', 'active')->firstOrFail();
+        $tenant = Tenant::where('slug', $slug)->where('status', 'active')->first();
+        if (!$tenant) {
+            abort(404);
+        }
         session(['current_tenant_id' => $tenant->id]);
         
         $categories = Category::where('status', 'active')

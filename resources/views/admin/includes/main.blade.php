@@ -21,9 +21,9 @@
     @endphp
     
     <div id="db-wrapper">
-        @include('admin.includes.sidebar')
+        @include('admin.includes.sidebar-new')
         <div id="page-content">
-            @include('admin.includes.header')
+            @include('admin.includes.header-new')
             <div class="mt-10  pb-18">
                 @yield('content')
             </div>
