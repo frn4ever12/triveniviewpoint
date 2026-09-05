@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Admin\SubscriptionController;
 use App\Http\Controllers\Admin\PlanFeatureController;
 use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\PosSettingController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\CashierDashboardController;
@@ -222,6 +223,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:digital-menu.view')->group(function () {
         Route::get('/digital-menu', [DigitalMenuController::class, 'index'])->name('digital-menu.index');
     });
+
+    Route::get('/pos-settings', [PosSettingController::class, 'index'])
+        ->name('pos-settings.index');
+    Route::put('/pos-settings', [PosSettingController::class, 'update'])
+        ->name('pos-settings.update');
 
     Route::get('/checkout-dashboard', [CashierDashboardController::class, 'index'])
         ->name('orders.checkout-dashboard');
