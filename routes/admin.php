@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\AddonController;
 use App\Http\Controllers\Admin\AboutController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ComboController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DigitalMenuController;
@@ -11,7 +13,9 @@ use App\Http\Controllers\Admin\KitchenConsumptionController;
 use App\Http\Controllers\Admin\KotController;
 use App\Http\Controllers\Admin\KtdController;
 use App\Http\Controllers\Admin\LabelController;
+use App\Http\Controllers\Admin\MenuAvailabilityController;
 use App\Http\Controllers\Admin\MenuItemController;
+use App\Http\Controllers\Admin\ModifierController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PurchaseController;
@@ -24,6 +28,7 @@ use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\TableController;
 use App\Http\Controllers\Admin\UnitController;
 use App\Http\Controllers\Admin\userController;
+use App\Http\Controllers\Admin\VariationController;
 use App\Http\Controllers\Admin\WastageController;
 use App\Http\Controllers\Admin\WebsiteSettingController;
 use App\Http\Controllers\Admin\TenantController;
@@ -109,6 +114,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:dishes.view')->group(function () {
         Route::get('menu-items', [MenuItemController::class, 'index'])->name('menu-items.index');
         Route::get('menu-items/{menu_item}', [MenuItemController::class, 'show'])->name('menu-items.show');
+        Route::resource('addons', AddonController::class);
+        Route::resource('variations', VariationController::class);
+        Route::resource('modifiers', ModifierController::class);
+        Route::resource('combos', ComboController::class);
+        Route::get('menu-availability', [MenuAvailabilityController::class, 'index'])->name('menu-availability.index');
+        Route::post('menu-availability', [MenuAvailabilityController::class, 'update'])->name('menu-availability.update');
     });
 
     Route::middleware('can:tables.view')->group(function () {
@@ -167,8 +178,20 @@ Route::middleware('auth')->group(function () {
         Route::put('/order-items/{orderItem}/status', [OrderController::class, 'updateOrderItemStatus'])
             ->name('order-items.status');
 
-        Route::get('/orders/delivery', [OrderController::class, 'getDeliveryOrders'])
-            ->name('orders.delivery');
+        Route::get('/orders/delivery', [OrderController::class, 'showDeliveryOrders'])->name('orders.delivery');
+        Route::get('/orders/dine-in', [OrderController::class, 'showDineInOrders'])->name('orders.dine-in');
+        Route::get('/orders/takeaway', [OrderController::class, 'showTakeawayOrders'])->name('orders.takeaway');
+        Route::get('/orders/online', [OrderController::class, 'showOnlineOrders'])->name('orders.online');
+        Route::get('/orders/cancelled', [OrderController::class, 'showCancelledOrders'])->name('orders.cancelled');
+        Route::get('/orders/history', [OrderController::class, 'showOrderHistory'])->name('orders.history');
+
+        // JSON endpoints for order type data
+        Route::get('/orders/dine-in/data', [OrderController::class, 'getDineInOrders'])->name('orders.dine-in.data');
+        Route::get('/orders/takeaway/data', [OrderController::class, 'getTakeawayOrders'])->name('orders.takeaway.data');
+        Route::get('/orders/delivery/data', [OrderController::class, 'getDeliveryOrders'])->name('orders.delivery.data');
+        Route::get('/orders/online/data', [OrderController::class, 'getOnlineOrders'])->name('orders.online.data');
+        Route::get('/orders/cancelled/data', [OrderController::class, 'getCancelledOrders'])->name('orders.cancelled.data');
+        Route::get('/orders/history/data', [OrderController::class, 'getOrderHistory'])->name('orders.history.data');
         Route::delete('/orders/{id}', [OrderController::class, 'destroy'])->name('orders.destroy');
         Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder'])
             ->name('orders.cancel');

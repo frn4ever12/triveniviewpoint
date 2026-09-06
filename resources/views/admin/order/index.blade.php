@@ -9,11 +9,11 @@
                 <p class="text-muted mb-0" style="font-size:.85rem;">Manage dine-in orders, tables, and KOTs.</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <button class="btn btn-danger btn-sm rounded-3 nav-btn active" data-target="order">Orders</button>
-                <a href="{{ route('admin.orders.details') }}" class="btn btn-outline-danger btn-sm rounded-3">Order List</a>
-                <button class="btn btn-outline-danger btn-sm rounded-3 nav-btn" data-target="table">Tables</button>
-                <button class="btn btn-outline-danger btn-sm rounded-3 nav-btn" data-target="kot">KOT</button>
-                <a target="_blank" href="{{ route('admin.orders.pos') }}" class="btn btn-outline-danger btn-sm rounded-3">POS</a>
+                <button class="btn btn-primary btn-sm rounded-3 nav-btn active" data-target="order">Orders</button>
+                <a href="{{ route('admin.orders.details') }}" class="btn btn-outline-primary btn-sm rounded-3">Order List</a>
+                <button class="btn btn-outline-primary btn-sm rounded-3 nav-btn" data-target="table">Tables</button>
+                <button class="btn btn-outline-primary btn-sm rounded-3 nav-btn" data-target="kot">KOT</button>
+                <a target="_blank" href="{{ route('admin.orders.pos') }}" class="btn btn-outline-primary btn-sm rounded-3">POS</a>
             </div>
         </div>
 
@@ -21,14 +21,39 @@
             {{-- Orders Section --}}
             <div id="order" class="content-pane">
                 <div class="card border-0 shadow-sm" style="border-radius:12px;">
-                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 px-3" style="border-radius:12px 12px 0 0;">
-                        <h5 class="mb-0 fw-bold" style="font-size:.95rem;">Recent Orders</h5>
-                        <div class="d-flex gap-2">
-                            <a href="{{ route('admin.orders.pos') }}" class="btn btn-sm btn-danger rounded-3">
-                                <i class="bi bi-plus-lg me-1"></i> Add New Order
-                            </a>
-                            <button class="btn btn-sm btn-outline-secondary rounded-3" onclick="refreshOrders()">
-                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                    <div class="card-header bg-white border-bottom py-3 px-3" style="border-radius:12px 12px 0 0;">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                            <h5 class="mb-0 fw-bold" style="font-size:.95rem;">Recent Orders</h5>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('admin.orders.pos') }}" class="btn btn-sm btn-primary rounded-3">
+                                    <i class="bi bi-plus-lg me-1"></i> Add New Order
+                                </a>
+                                <button class="btn btn-sm btn-outline-secondary rounded-3" onclick="refreshOrders()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button class="btn btn-sm btn-outline-primary order-tab active" data-type="all">
+                                All Orders <span class="badge bg-primary ms-1" id="count-all">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary order-tab" data-type="dine_in">
+                                Dine In <span class="badge bg-primary ms-1" id="count-dine_in">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary order-tab" data-type="takeaway">
+                                Takeaway <span class="badge bg-primary ms-1" id="count-takeaway">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary order-tab" data-type="delivery">
+                                Delivery <span class="badge bg-primary ms-1" id="count-delivery">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary order-tab" data-type="online">
+                                Online <span class="badge bg-primary ms-1" id="count-online">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary order-tab" data-type="cancelled">
+                                Cancelled <span class="badge bg-danger ms-1" id="count-cancelled">0</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary order-tab" data-type="history">
+                                History <span class="badge bg-secondary ms-1" id="count-history">0</span>
                             </button>
                         </div>
                     </div>
@@ -286,6 +311,28 @@
             color: #fff;
             box-shadow: 0 2px 12px rgba(220,38,38,.25);
         }
+        .order-action-btn.primary {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #dbeafe;
+        }
+        .order-action-btn.primary:hover {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+            box-shadow: 0 2px 12px rgba(37,99,235,.25);
+        }
+        .order-action-btn.success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #dcfce7;
+        }
+        .order-action-btn.success:hover {
+            background: #16a34a;
+            color: #fff;
+            border-color: #16a34a;
+            box-shadow: 0 2px 12px rgba(22,163,74,.25);
+        }
         .order-action-btn.muted {
             background: #f8fafc;
             color: #64748b;
@@ -303,6 +350,14 @@
             border-radius: 14px;
         }
         .order-action-btn.xs i { font-size: .7rem; }
+        .card-footer-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .card-footer-actions .order-action-btn {
+            flex: 1;
+            justify-content: center;
+        }
 
         /* ── Modern Confirm Modal ── */
         .confirm-overlay {
@@ -651,8 +706,40 @@
             const r = await fetch('/admin/orders/recent', { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } });
             const d = await r.json();
             if (!d.success) return;
+
+            // Update counts
+            if (d.counts) {
+                document.getElementById('count-all').textContent = d.counts.all || 0;
+                document.getElementById('count-dine_in').textContent = d.counts.dine_in || 0;
+                document.getElementById('count-takeaway').textContent = d.counts.takeaway || 0;
+                document.getElementById('count-delivery').textContent = d.counts.delivery || 0;
+                document.getElementById('count-online').textContent = d.counts.online || 0;
+                document.getElementById('count-cancelled').textContent = d.counts.cancelled || 0;
+                document.getElementById('count-history').textContent = d.counts.history || 0;
+            }
+
             const ct = document.getElementById('ordersTableBody');
-            ct.innerHTML = d.tables.map(table => {
+            const activeTab = document.querySelector('.order-tab.active')?.dataset.type || 'all';
+
+            // Filter orders based on active tab
+            let filteredTables = d.tables;
+            if (activeTab !== 'all' && activeTab !== 'history') {
+                filteredTables = d.tables.map(table => ({
+                    ...table,
+                    orders: table.orders.filter(order => {
+                        if (activeTab === 'cancelled') return order.status === 'cancelled';
+                        return order.order_type === activeTab && order.status !== 'cancelled';
+                    })
+                })).filter(table => table.orders.length > 0);
+            } else if (activeTab === 'history') {
+                // Show completed orders
+                filteredTables = d.tables.map(table => ({
+                    ...table,
+                    orders: table.orders.filter(order => order.status === 'completed')
+                })).filter(table => table.orders.length > 0);
+            }
+
+            ct.innerHTML = filteredTables.map(table => {
                 const oh = table.orders.length ? table.orders.map(order => {
                     const items = order.items.map(item => `
                         <li class="d-flex justify-content-between align-items-center py-1" style="font-size:.82rem;border-bottom:1px solid #f1f5f9;">
@@ -679,9 +766,15 @@
                         <div class="order-card-slim">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0 fw-bold" style="font-size:.85rem;">${table.name}</h6>
-                                <span class="dash-badge ${table.status==='available'?'bg-success text-white':'bg-danger text-white'}">${table.status}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="/admin/orders/table/${table.id}/edit" class="order-action-btn primary" onclick="event.stopPropagation();" title="Add New"><i class="bi bi-plus-lg"></i></a>
+                                    <span class="dash-badge ${table.status==='available'?'bg-success text-white':'bg-danger text-white'}">${table.status}</span>
+                                </div>
                             </div>
                             ${oh}
+                            <div class="card-footer-actions mt-3 pt-2 border-top">
+                                <button class="order-action-btn success w-100" onclick="event.stopPropagation();window.location.href='/admin/orders/table/${table.id}/checkout'"><i class="bi bi-cart-check me-1"></i> Checkout</button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -790,6 +883,18 @@
     // Legacy wrappers with modal
     async function cancelOrder(orderId) { confirmAction('cancel-order', orderId); }
     async function cancelOrderItem(itemId, itemName) { confirmAction('cancel-item', itemId, itemName); }
+
+    // Order tab switching
+    document.querySelectorAll('.order-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            document.querySelectorAll('.order-tab').forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
+            this.classList.add('active');
+            // Reload orders with new filter
+            loadRecentOrders();
+        });
+    });
     async function deleteOrder(orderId) { confirmAction('delete', orderId); }
 
     function refreshOrders() { loadRecentOrders(); showToast('success', 'Refreshed'); }

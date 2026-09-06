@@ -10,6 +10,14 @@
             #db-wrapper {
                 flex-direction: column;
             }
+            .header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1050;
+                background: white;
+            }
             .navbar-vertical {
                 position: fixed;
                 left: -280px;
@@ -37,7 +45,7 @@
             }
             #page-content {
                 margin-left: 0 !important;
-                padding-top: 60px;
+                padding-top: 70px;
                 width: 100%;
             }
             .mt-10 {
@@ -57,7 +65,7 @@
                 left: -260px;
             }
             #page-content {
-                padding: 60px 0.5rem 1rem 0.5rem;
+                padding: 70px 0.5rem 1rem 0.5rem;
             }
             .container-fluid {
                 padding: 0 0.5rem;

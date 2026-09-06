@@ -46,6 +46,53 @@ class OrderController extends Controller
         ));
     }
 
+    public function showOrdersByType($type)
+    {
+        $tables = Table::all();
+        $menuItems = MenuItem::with('category')->get();
+        $categories = Category::orderBy('name')->get();
+        $waiters = User::get();
+
+        // Backward-compat: pass legacy variable names for existing views
+        $dishes = $menuItems;
+        $menus = $categories;
+
+        return view('admin.order.type', compact(
+            'tables', 'menuItems', 'waiters',
+            'dishes', 'menus', 'categories', 'type'
+        ));
+    }
+
+    public function showDineInOrders()
+    {
+        return $this->showOrdersByType('dine-in');
+    }
+
+    public function showTakeawayOrders()
+    {
+        return $this->showOrdersByType('takeaway');
+    }
+
+    public function showDeliveryOrders()
+    {
+        return $this->showOrdersByType('delivery');
+    }
+
+    public function showOnlineOrders()
+    {
+        return $this->showOrdersByType('online');
+    }
+
+    public function showCancelledOrders()
+    {
+        return $this->showOrdersByType('cancelled');
+    }
+
+    public function showOrderHistory()
+    {
+        return $this->showOrdersByType('history');
+    }
+
     public function store(StoreOrderRequest $request)
     {
         DB::beginTransaction();
@@ -193,6 +240,18 @@ class OrderController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
+        // Get order counts by type
+        $allOrders = Order::with(['items', 'invoice'])->get();
+        $counts = [
+            'all' => $allOrders->where('status', '!=', 'completed')->count(),
+            'dine_in' => $allOrders->where('order_type', 'dine_in')->where('status', '!=', 'completed')->count(),
+            'takeaway' => $allOrders->where('order_type', 'takeaway')->where('status', '!=', 'completed')->count(),
+            'delivery' => $allOrders->where('order_type', 'delivery')->where('status', '!=', 'completed')->count(),
+            'online' => $allOrders->where('order_type', 'online')->where('status', '!=', 'completed')->count(),
+            'cancelled' => $allOrders->where('status', 'cancelled')->count(),
+            'history' => $allOrders->where('status', 'completed')->count(),
+        ];
+
         return response()->json([
             'success' => true,
             'tables' => $tables->map(fn ($table) => [
@@ -202,6 +261,7 @@ class OrderController extends Controller
                 'orders' => $table->orders->map(fn ($order) => [
                     'id' => $order->id,
                     'order_no' => $order->order_no,
+                    'order_type' => $order->order_type,
                     'items' => $order->items->map(fn ($item) => [
                         'id' => $item->id,
                         'name' => $item->menuItem->name,
@@ -215,6 +275,7 @@ class OrderController extends Controller
                     'waiter' => $order->waiter?->name,
                 ]),
             ]),
+            'counts' => $counts,
         ]);
     }
 
@@ -249,6 +310,136 @@ class OrderController extends Controller
                 'status' => $order->status,
                 'created_at' => $order->created_at,
                 'waiter' => $order->waiter,
+            ]),
+        ]);
+    }
+
+    /**
+     * Get dine-in orders
+     */
+    public function getDineInOrders()
+    {
+        return $this->getOrdersByType('dine_in');
+    }
+
+    /**
+     * Get takeaway orders
+     */
+    public function getTakeawayOrders()
+    {
+        return $this->getOrdersByType('takeaway');
+    }
+
+    /**
+     * Get delivery orders
+     */
+    public function getDeliveryOrders()
+    {
+        return $this->getOrdersByType('delivery');
+    }
+
+    /**
+     * Get online orders
+     */
+    public function getOnlineOrders()
+    {
+        return $this->getOrdersByType('online');
+    }
+
+    /**
+     * Get cancelled orders
+     */
+    public function getCancelledOrders()
+    {
+        $orders = Order::with(['table', 'items.menuItem', 'waiter', 'invoice'])
+            ->where('status', 'cancelled')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'orders' => $orders->map(fn ($order) => [
+                'id' => $order->id,
+                'order_no' => $order->order_no,
+                'order_type' => $order->order_type,
+                'table' => $order->table,
+                'items' => $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'name' => $item->menuItem->name,
+                    'quantity' => $item->quantity,
+                    'status' => $item->status ?? 'cancelled',
+                ]),
+                'items_count' => $order->items->sum('quantity'),
+                'total_amount' => $order->invoice->total_amount ?? 0,
+                'status' => $order->status,
+                'created_at' => $order->created_at->diffForHumans(),
+                'waiter' => $order->waiter?->name,
+            ]),
+        ]);
+    }
+
+    /**
+     * Get order history (completed orders)
+     */
+    public function getOrderHistory()
+    {
+        $orders = Order::with(['table', 'items.menuItem', 'waiter', 'invoice'])
+            ->where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'orders' => $orders->map(fn ($order) => [
+                'id' => $order->id,
+                'order_no' => $order->order_no,
+                'order_type' => $order->order_type,
+                'table' => $order->table,
+                'items' => $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'name' => $item->menuItem->name,
+                    'quantity' => $item->quantity,
+                    'status' => $item->status ?? 'completed',
+                ]),
+                'items_count' => $order->items->sum('quantity'),
+                'total_amount' => $order->invoice->total_amount ?? 0,
+                'status' => $order->status,
+                'created_at' => $order->created_at->diffForHumans(),
+                'waiter' => $order->waiter?->name,
+            ]),
+        ]);
+    }
+
+    /**
+     * Helper method to get orders by type
+     */
+    private function getOrdersByType($type)
+    {
+        $orders = Order::with(['table', 'items.menuItem', 'waiter', 'invoice'])
+            ->where('order_type', $type)
+            ->where('status', '!=', 'completed')
+            ->where('status', '!=', 'cancelled')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'orders' => $orders->map(fn ($order) => [
+                'id' => $order->id,
+                'order_no' => $order->order_no,
+                'order_type' => $order->order_type,
+                'table' => $order->table,
+                'items' => $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'name' => $item->menuItem->name,
+                    'quantity' => $item->quantity,
+                    'status' => $item->status ?? 'pending',
+                ]),
+                'items_count' => $order->items->sum('quantity'),
+                'total_amount' => $order->invoice->total_amount ?? 0,
+                'status' => $order->status,
+                'created_at' => $order->created_at->diffForHumans(),
+                'waiter' => $order->waiter?->name,
             ]),
         ]);
     }
@@ -1150,50 +1341,6 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to cancel item: '.$e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function getDeliveryOrders(Request $request)
-    {
-        try {
-            $orders = Order::with(['items'])
-                ->whereIn('order_type', ['delivery'])
-                ->whereDate('created_at', today())
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($order) {
-                    // Calculate total from items
-                    $itemsTotal = $order->items->sum('total');
-
-                    return [
-                        'id' => $order->id,
-                        'order_no' => $order->order_no,
-                        'customer_name' => $order->customer_name,
-                        'customer_phone' => $order->customer_phone,
-                        'delivery_address' => $order->delivery_address,
-                        'payment_status' => $order->payment_status,
-                        'status' => $order->status->value ?? $order->status,
-                        'delivery_status' => $order->delivery_status,
-                        'order_type' => $order->order_type,
-                        'order_items_count' => $order->items->count(),
-                        'total' => $itemsTotal,
-                        'created_at' => $order->created_at->toISOString(),
-                    ];
-                });
-
-            return response()->json([
-                'success' => true,
-                'orders' => $orders,
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Delivery Orders Error: '.$e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load delivery orders',
             ], 500);
         }
     }
