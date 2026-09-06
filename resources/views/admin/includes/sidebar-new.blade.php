@@ -114,23 +114,10 @@
 
             <!-- 1. Dashboard -->
             <li class="nav-item">
-                <a class="nav-link has-arrow {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-                   href="#!" data-bs-toggle="collapse" data-bs-target="#navDashboard"
-                   aria-expanded="{{ request()->routeIs('dashboard') ? 'true' : 'false' }}" aria-controls="navDashboard">
+                <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
+                    href="{{ route('dashboard') }}">
                     <i data-feather="grid" class="nav-icon icon-xs me-2"></i> Dashboard
-                    <span class="nav-arrow ms-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </span>
                 </a>
-                <div id="navDashboard" class="collapse {{ request()->routeIs('dashboard') ? 'show' : '' }}">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                                <i data-feather="home" class="icon-xs me-2"></i> Main Dashboard
-                            </a>
-                        </li>
-                    </ul>
-                </div>
             </li>
 
             <!-- 2. POS -->
