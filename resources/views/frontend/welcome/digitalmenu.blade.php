@@ -457,7 +457,7 @@
     let cart = [];
     let currentOrder = null;
     let sessionToken = null;
-    let tenantSlug = '{{ request()->segment(2) }}';
+    let tenantSlug = '{{ $tenant->slug ?? '' }}';
     let tableId = {{ $tableRecord->id ?? 'null' }};
 
     document.addEventListener('DOMContentLoaded', () => {
