@@ -15,11 +15,19 @@
             var $this = $(this);
             var $target = $($this.attr("data-bs-target"));
             var isExpanded = $this.attr("aria-expanded") === "true";
-            
+
             // Rotate chevron
             setTimeout(function() {
                 if ($target.hasClass("show")) {
                     $this.attr("aria-expanded", "true");
+                    // Force icon visibility in expanded submenu
+                    $target.find('i[data-feather], svg.feather').css({
+                        'display': 'inline-block',
+                        'visibility': 'visible',
+                        'opacity': '1',
+                        'width': '16px',
+                        'height': '16px'
+                    });
                 } else {
                     $this.attr("aria-expanded", "false");
                 }
@@ -27,13 +35,17 @@
         });
     }
 
-    if ($(".nav-scroller").length) {
-        OverlayScrollbars(document.querySelectorAll(".nav-scroller"), {
-            className: "os-theme-dark",
-            scrollbars: {
-                autoHide: "leave",
-            },
-        });
+    if (typeof OverlayScrollbars !== 'undefined' && $(".nav-scroller").length) {
+        try {
+            OverlayScrollbars(document.querySelectorAll(".nav-scroller"), {
+                className: "os-theme-dark",
+                scrollbars: {
+                    autoHide: "leave",
+                },
+            });
+        } catch (e) {
+            console.warn('OverlayScrollbars initialization failed:', e);
+        }
     }
 
     // Multi level menu dropdown

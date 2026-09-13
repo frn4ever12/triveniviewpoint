@@ -42,6 +42,7 @@ class ReportController extends Controller
 
     public function updateStock(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id;
         $request->validate([
             'id' => 'required|exists:products,id',
             'add_usage' => 'required|integer|min:1',
@@ -51,10 +52,15 @@ class ReportController extends Controller
         $addUsage = $request->add_usage;
     
         // Get total purchased quantity
-        $totalPurchased = PurchaseItem::where('product_id', $productId)->sum('quantity');
+        $totalPurchased = PurchaseItem::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('product_id', $productId)
+            ->sum('quantity');
         
         // Get current used quantity
-        $currentUsed = StockUsage::where('product_id', $productId)->value('quantity_used') ?? 0;
+        $currentUsed = StockUsage::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->value('quantity_used') ?? 0;
         
         // Calculate current available stock
         $currentStock = $totalPurchased - $currentUsed;
@@ -77,7 +83,7 @@ class ReportController extends Controller
         );
     
         // Get product name for response
-        $productName = Product::find($productId)->name;
+        $productName = Product::withoutGlobalScopes()->where('tenant_id', $tenantId)->find($productId)->name;
     
         // Refresh summary counts
         $dataTable = new StockDataTable();
@@ -112,26 +118,37 @@ class ReportController extends Controller
     
     private function getExpenseSummary()
     {
+        $tenantId = auth()->user()->tenant_id;
         return [
-            'total_expenses' => Expense::whereMonth('created_at', now()->month)
+            'total_expenses' => Expense::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->whereMonth('created_at', now()->month)
                                        ->whereYear('created_at', now()->year)
                                        ->count(),
     
-            'total_amount'   => Expense::whereMonth('created_at', now()->month)
+            'total_amount'   => Expense::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->whereMonth('created_at', now()->month)
                                        ->whereYear('created_at', now()->year)
                                        ->sum(DB::raw('amount - tax_amount')),
     
-            'pending'        => Expense::where('status','pending')
+            'pending'        => Expense::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('status','pending')
                                        ->whereMonth('created_at', now()->month)
                                        ->whereYear('created_at', now()->year)
                                        ->count(),
     
-            'approved'       => Expense::where('status','approved')
+            'approved'       => Expense::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('status','approved')
                                        ->whereMonth('created_at', now()->month)
                                        ->whereYear('created_at', now()->year)
                                        ->count(),
     
-            'rejected'       => Expense::where('status','rejected')
+            'rejected'       => Expense::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('status','rejected')
                                        ->whereMonth('created_at', now()->month)
                                        ->whereYear('created_at', now()->year)
                                        ->count(),
@@ -140,7 +157,10 @@ class ReportController extends Controller
     
     private function getMonthlyExpenses()
     {
-        return Expense::selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount - tax_amount) as total")
+        $tenantId = auth()->user()->tenant_id;
+        return Expense::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount - tax_amount) as total")
             ->groupBy('month')
             ->orderBy('month', 'asc')
             ->get();
@@ -209,59 +229,72 @@ class ReportController extends Controller
 
     public function salesReport(SalesDataTable $dataTable)
     {
+        $tenantId = auth()->user()->tenant_id;
         $month = request('month', now()->format('Y-m'));
 
         $summary = [
-            'total_sales'   => number_format(OrderItem::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->sum('total'), 2),
-            'total_orders'  => OrderItem::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->distinct('order_id')->count('order_id'),
-            'total_dishes'  => OrderItem::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->distinct('dish_id')->count('dish_id'),
-            'total_quantity'=> OrderItem::whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->sum('quantity'),
+            'total_sales'   => number_format(OrderItem::withoutGlobalScopes()->where('tenant_id', $tenantId)->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->sum('total'), 2),
+            'total_orders'  => OrderItem::withoutGlobalScopes()->where('tenant_id', $tenantId)->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->distinct('order_id')->count('order_id'),
+            'total_dishes'  => OrderItem::withoutGlobalScopes()->where('tenant_id', $tenantId)->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->distinct('dish_id')->count('dish_id'),
+            'total_quantity'=> OrderItem::withoutGlobalScopes()->where('tenant_id', $tenantId)->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$month])->sum('quantity'),
         ];
         return $dataTable->render('admin.reports.sales.index',compact('summary'));
     }
 
     public function financialTrackReport(Request $request)
     {
+        $tenantId = auth()->user()->tenant_id;
         $year = $request->input('year', now()->year);
         $month = (int) $request->input('month', now()->format('m'));
 
-        $totalRevenue = Invoice::where('payment_status', 'paid')
+        $totalRevenue = Invoice::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('payment_status', 'paid')
             ->whereYear('paid_at', $year)
             ->whereMonth('paid_at', $month)
             ->sum('total_amount');
 
-        $totalExpenses = Expense::whereYear('created_at', $year)
+        $totalExpenses = Expense::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
             ->sum(DB::raw('amount - tax_amount'));
 
-        $totalPurchases = Purchase::whereYear('created_at', $year)
+        $totalPurchases = Purchase::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
             ->sum('total_amount');
 
         $netProfit = $totalRevenue - $totalExpenses - $totalPurchases;
 
-        $revenueByMethod = Invoice::where('payment_status', 'paid')
+        $revenueByMethod = Invoice::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('payment_status', 'paid')
             ->whereYear('paid_at', $year)
             ->whereMonth('paid_at', $month)
             ->selectRaw('payment_method, SUM(total_amount) as total')
             ->groupBy('payment_method')
             ->pluck('total', 'payment_method');
 
-        $monthlyTrend = DB::table(function ($query) use ($year) {
+        $monthlyTrend = DB::table(function ($query) use ($year, $tenantId) {
             $query->from('invoices')
+                ->where('tenant_id', $tenantId)
                 ->where('payment_status', 'paid')
                 ->whereYear('paid_at', $year)
                 ->selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as period, SUM(total_amount) as revenue, 0 as expense, 0 as purchase")
                 ->groupByRaw("DATE_FORMAT(paid_at, '%Y-%m')");
         }, 'revenue_data')
-            ->unionAll(DB::table(function ($query) use ($year) {
+            ->unionAll(DB::table(function ($query) use ($year, $tenantId) {
                 $query->from('expenses')
+                    ->where('tenant_id', $tenantId)
                     ->whereYear('created_at', $year)
                     ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, 0 as revenue, SUM(amount - tax_amount) as expense, 0 as purchase")
                     ->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')");
             }, 'expense_data'))
-            ->unionAll(DB::table(function ($query) use ($year) {
+            ->unionAll(DB::table(function ($query) use ($year, $tenantId) {
                 $query->from('purchases')
+                    ->where('tenant_id', $tenantId)
                     ->whereYear('created_at', $year)
                     ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, 0 as revenue, 0 as expense, SUM(total_amount) as purchase")
                     ->groupByRaw("DATE_FORMAT(created_at, '%Y-%m')");
@@ -271,7 +304,9 @@ class ReportController extends Controller
             ->orderBy('period')
             ->get();
 
-        $expenseByLabel = Expense::whereYear('created_at', $year)
+        $expenseByLabel = Expense::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
             ->selectRaw('label_id, SUM(amount - tax_amount) as total')
             ->groupBy('label_id')
@@ -279,7 +314,9 @@ class ReportController extends Controller
             ->get()
             ->mapWithKeys(fn($e) => [$e->label?->name ?? 'Uncategorized' => $e->total]);
 
-        $recentInvoices = Invoice::where('payment_status', 'paid')
+        $recentInvoices = Invoice::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('payment_status', 'paid')
             ->whereYear('paid_at', $year)
             ->whereMonth('paid_at', $month)
             ->with('order.table')

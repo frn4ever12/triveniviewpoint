@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dmcrestro-v1';
+const CACHE_NAME = 'dmcrestro-v2';
 const urlsToCache = [
     '/',
     '/manifest.json',

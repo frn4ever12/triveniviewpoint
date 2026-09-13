@@ -27,7 +27,9 @@ class CategoryController extends Controller
         DB::beginTransaction();
 
         try {
-            Category::create($request->validated());
+            $data = $request->validated();
+            $data['tenant_id'] = auth()->user()->tenant_id;
+            Category::create($data);
 
             DB::commit();
 
@@ -43,16 +45,29 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
+        // Verify category belongs to current tenant
+        if ($category->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to category');
+        }
         return view('admin.category.show', compact('category'));
     }
 
     public function edit(Category $category)
     {
+        // Verify category belongs to current tenant
+        if ($category->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to category');
+        }
         return view('admin.category.edit', compact('category'));
     }
 
     public function update(CategoryRequest $request, Category $category)
     {
+        // Verify category belongs to current tenant
+        if ($category->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to category');
+        }
+
         DB::beginTransaction();
 
         try {
@@ -72,6 +87,11 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        // Verify category belongs to current tenant
+        if ($category->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to category');
+        }
+
         DB::beginTransaction();
 
         try {

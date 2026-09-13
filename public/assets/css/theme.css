@@ -1,10 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
 :root {
-    --sidebar: #0f172a;
-    --sidebar-text: #ffffff;
-    --sidebar-hover: #1e293b;
-    --sidebar-active: #3b82f6;
-    --sidebar-active-bg: rgba(59, 130, 246, 0.15);
+    --sidebar: #0F172A;
+    --sidebar-text: #CBD5E1;
+    --sidebar-hover: #1E293B;
+    --sidebar-active: #2563EB;
+    --sidebar-active-text: #FFFFFF;
+    --sidebar-active-icon: #FFFFFF;
+    --sidebar-icon: #94A3B8;
+    --sidebar-heading: #64748B;
+    --sidebar-border: #1E293B;
+    --sidebar-active-bg: rgba(37, 99, 235, 0.15);
     --background: #fff;
     --bs-blue: #0d6efd;
     --bs-indigo: #6610f2;
@@ -23024,13 +23029,180 @@ fieldset:disabled .btn {
     color: #94a3b8;
 }
 .navbar-vertical .navbar-heading {
-    color: #94a3b8;
+    color: var(--sidebar-heading);
     padding: 0.75rem 1.25rem;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.1rem;
     font-weight: 600;
     margin-top: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL SIDEBAR ICON VISIBILITY FIX
+   ═══════════════════════════════════════════════════════════ */
+/* Ensure all feather icons in sidebar are visible */
+.navbar-vertical i[data-feather],
+.navbar-vertical svg.feather {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+    vertical-align: middle !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+}
+
+.navbar-vertical .nav-icon {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+}
+
+/* Ensure submenu icons are always visible */
+.navbar-vertical .collapse i[data-feather],
+.navbar-vertical .collapse svg.feather,
+.navbar-vertical .collapse.show i[data-feather],
+.navbar-vertical .collapse.show svg.feather {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 16px !important;
+    height: 16px !important;
+    vertical-align: middle !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+}
+
+.navbar-vertical .collapse .icon-xs,
+.navbar-vertical .collapse.show .icon-xs {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+}
+
+/* Force visibility on all nav-link icons */
+.navbar-vertical .nav-link i,
+.navbar-vertical .nav-link svg {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Force visibility on all icons in collapsed/expanded menus */
+.navbar-vertical .nav-link i,
+.navbar-vertical .nav-link svg,
+.navbar-vertical .collapse i,
+.navbar-vertical .collapse svg,
+.navbar-vertical .collapse.show i,
+.navbar-vertical .collapse.show svg {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ultra-specific rules for submenu icons */
+nav.navbar-vertical ul li a i[data-feather],
+nav.navbar-vertical ul li a svg.feather,
+nav.navbar-vertical .collapse ul li a i[data-feather],
+nav.navbar-vertical .collapse ul li a svg.feather,
+nav.navbar-vertical .collapse.show ul li a i[data-feather],
+nav.navbar-vertical .collapse.show ul li a svg.feather {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+}
+
+/* Target all SVG elements in navbar */
+.navbar-vertical svg {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+}
+
+/* Target all i elements with data-feather */
+.navbar-vertical i[data-feather] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+}
+
+/* Target nav-icon class specifically */
+.navbar-vertical .nav-icon {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+}
+
+/* Target icon-xs class */
+.navbar-vertical .icon-xs {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    min-height: 16px !important;
+}
+
+/* Nav arrow visibility */
+.nav-arrow {
+    transition: transform 0.2s ease;
+    opacity: 1 !important;
+    display: inline-block !important;
+    width: 16px !important;
+    height: 16px !important;
+    visibility: visible !important;
+}
+
+.nav-link[aria-expanded="true"] .nav-arrow {
+    transform: rotate(180deg);
+}
+
+.nav-link.has-arrow {
+    position: relative;
+}
+
+.nav-link.has-arrow .nav-arrow {
+    display: inline-block !important;
+    width: 16px !important;
+    height: 16px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.nav-link.has-arrow i[data-feather="chevron-down"],
+.nav-link.has-arrow svg.feather-chevron-down {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 16px !important;
+    height: 16px !important;
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link {
     padding: 0.6rem 1rem;
@@ -23048,20 +23220,28 @@ fieldset:disabled .btn {
     transition: all 0.3s ease;
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link:hover {
-    color: var(--sidebar-text);
+    color: #FFFFFF;
     background-color: var(--sidebar-hover);
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link:hover .nav-icon {
-    color: var(--sidebar-active);
+    color: #FFFFFF;
+}
+.navbar-vertical .navbar-nav .nav-item .nav-link:hover i[data-feather],
+.navbar-vertical .navbar-nav .nav-item .nav-link:hover svg.feather {
+    color: #FFFFFF;
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link.active {
-    color: var(--sidebar-active);
-    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    background-color: var(--sidebar-active);
     font-weight: 600;
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link.active .nav-icon {
-    color: var(--sidebar-active);
+    color: var(--sidebar-active-icon);
     opacity: 1;
+}
+.navbar-vertical .navbar-nav .nav-item .nav-link.active i[data-feather],
+.navbar-vertical .navbar-nav .nav-item .nav-link.active svg.feather {
+    color: var(--sidebar-active-icon);
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link[data-bs-toggle="collapse"] {
     position: relative;
@@ -23076,12 +23256,13 @@ fieldset:disabled .btn {
     opacity: 0.8;
     font-size: 0.875rem;
     transition: all 0.3s ease;
-    color: var(--sidebar-text);
+    color: var(--sidebar-icon);
 }
 .navbar-vertical .navbar-nav .nav-arrow {
     opacity: 0.6;
     transition: all 0.3s ease;
     transform: rotate(0deg);
+    color: var(--sidebar-icon);
 }
 .navbar-vertical .navbar-nav .nav-item .nav-link[aria-expanded="true"] .nav-arrow {
     transform: rotate(180deg);
@@ -23091,38 +23272,56 @@ fieldset:disabled .btn {
     margin-right: 0.5rem;
 }
 .navbar-vertical .navbar-nav .nav .nav-item .nav-link {
-    color: #cbd5e1;
+    color: var(--sidebar-text);
     padding: 0.4rem 1rem 0.4rem 2.5rem;
     font-size: 0.9rem;
     border-radius: 6px;
     margin-left: 0.5rem;
     margin-right: 0.5rem;
+    transition: all 0.3s ease;
 }
 .navbar-vertical .navbar-nav .nav .nav-item .nav-link:hover {
-    color: var(--sidebar-text);
+    color: #FFFFFF;
     background-color: var(--sidebar-hover);
 }
+.navbar-vertical .navbar-nav .nav .nav-item .nav-link:hover i[data-feather],
+.navbar-vertical .navbar-nav .nav .nav-item .nav-link:hover svg.feather {
+    color: #FFFFFF;
+}
 .navbar-vertical .navbar-nav .nav .nav-item .nav-link.active {
-    color: var(--sidebar-active);
-    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    background-color: var(--sidebar-active);
     font-weight: 500;
 }
+.navbar-vertical .navbar-nav .nav .nav-item .nav-link.active i[data-feather],
+.navbar-vertical .navbar-nav .nav .nav-item .nav-link.active svg.feather {
+    color: var(--sidebar-active-icon);
+}
 .navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link {
-    color: #cbd5e1;
+    color: var(--sidebar-text);
     padding: 0.4rem 1rem 0.4rem 3.5rem;
     font-size: 0.85rem;
     border-radius: 6px;
     margin-left: 0.5rem;
     margin-right: 0.5rem;
+    transition: all 0.3s ease;
 }
 .navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link:hover {
-    color: var(--sidebar-text);
+    color: #FFFFFF;
     background-color: var(--sidebar-hover);
 }
+.navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link:hover i[data-feather],
+.navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link:hover svg.feather {
+    color: #FFFFFF;
+}
 .navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link.active {
-    color: var(--sidebar-active);
-    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+    background-color: var(--sidebar-active);
     font-weight: 500;
+}
+.navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link.active i[data-feather],
+.navbar-vertical .navbar-nav .nav .nav-item .nav .nav-item .nav-link.active svg.feather {
+    color: var(--sidebar-active-icon);
 }
 .navbar-vertical
     .navbar-nav
@@ -23292,7 +23491,8 @@ fieldset:disabled .btn {
 
 #page-content {
     min-height: 100vh;
-    min-width: 100vw;
+    min-width: 0;
+    width: calc(100vw - 15.625rem);
     margin-left: 15.625rem;
     transition: margin 0.25s ease-out;
 }
@@ -23303,6 +23503,7 @@ fieldset:disabled .btn {
 
 #db-wrapper.toggled #page-content {
     margin-left: 0;
+    width: 100vw;
 }
 
 #db-wrapper.toggled #page-content .inner-wrapper-sticky {
@@ -23321,9 +23522,11 @@ fieldset:disabled .btn {
 @media (max-width: 576px) {
     #page-content {
         margin-left: 0rem;
+        width: 100%;
     }
     #db-wrapper.toggled #page-content {
         margin-left: 15.6875rem;
+        width: calc(100vw - 15.6875rem);
     }
 }
 
@@ -23333,7 +23536,7 @@ fieldset:disabled .btn {
     }
     #page-content {
         min-width: 0rem;
-        width: 100%;
+        width: calc(100vw - 15.625rem);
     }
     #db-wrapper.toggled .navbar-vertical {
         margin-left: -16rem;
@@ -23343,9 +23546,11 @@ fieldset:disabled .btn {
 @media (min-width: 576px) and (max-width: 767.98px) {
     #page-content {
         margin-left: 0rem;
+        width: 100%;
     }
     #db-wrapper.toggled #page-content {
         margin-left: 15.6875rem;
+        width: calc(100vw - 15.6875rem);
     }
 }
 

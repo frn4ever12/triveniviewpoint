@@ -111,9 +111,9 @@ $content = <<<'BLADE'
                                             <div class="pos-item-card"
                                                  data-menu-id="{{ $dish->menu_id }}"
                                                  data-category-id="{{ $dish->menu->menu_category_id }}"
-                                                 onclick="addToCart({{ $dish->id }}, '{{ addslashes($dish->name) }}', {{ $dish->final_price }}, '{{ $dish->image_url }}')">
+                                                 onclick="addToCart({{ $dish->id }}, '{{ addslashes($dish->name) }}', {{ $dish->final_price }}, '{{ $dish->image_url ?: '/assets/images/defaultfood.png' }}')">
                                                 <div class="pos-item-img-wrap">
-                                                    <img src="{{ $dish->image_url ?: 'https://via.placeholder.com/200x120?text=' . urlencode($dish->name) }}" alt="{{ $dish->name }}" class="pos-item-img">
+                                                    <img src="{{ $dish->image_url ?: asset('assets/images/defaultfood.png') }}" alt="{{ $dish->name }}" class="pos-item-img">
                                                     <div class="pos-item-add-overlay">
                                                         <div class="pos-item-add-circle">+</div>
                                                     </div>

@@ -31,27 +31,34 @@ class OrderController extends Controller
 
     public function index()
     {
-        $tables = Table::all();
-        $menuItems = MenuItem::with('category')->get();
-        $categories = Category::orderBy('name')->get();
-        $waiters = User::get();
+        $tenantId = auth()->user()->tenant_id;
+
+        $tables = Table::where('tenant_id', $tenantId)->get();
+        $menuItems = MenuItem::where('tenant_id', $tenantId)->with('category')->get();
+        $categories = Category::where('tenant_id', $tenantId)->orderBy('name')->get();
+        $waiters = User::where('tenant_id', $tenantId)->get();
+
+        // Group dishes by category_id for POS view
+        $dishes = $menuItems;
+        $dishesByCategory = $menuItems->groupBy('category_id');
 
         // Backward-compat: pass legacy variable names for existing views
-        $dishes = $menuItems;
         $menus = $categories;
 
         return view('admin.order.index', compact(
             'tables', 'menuItems', 'waiters',
-            'dishes', 'menus', 'categories'
+            'dishes', 'categories', 'dishesByCategory', 'menus'
         ));
     }
 
     public function showOrdersByType($type)
     {
-        $tables = Table::all();
-        $menuItems = MenuItem::with('category')->get();
-        $categories = Category::orderBy('name')->get();
-        $waiters = User::get();
+        $tenantId = auth()->user()->tenant_id;
+
+        $tables = Table::where('tenant_id', $tenantId)->get();
+        $menuItems = MenuItem::where('tenant_id', $tenantId)->with('category')->get();
+        $categories = Category::where('tenant_id', $tenantId)->orderBy('name')->get();
+        $waiters = User::where('tenant_id', $tenantId)->get();
 
         // Backward-compat: pass legacy variable names for existing views
         $dishes = $menuItems;
@@ -119,6 +126,7 @@ class OrderController extends Controller
 
             // Create order
             $order = Order::create([
+                'tenant_id' => Auth::user()->tenant_id,
                 'order_no' => $orderNumber,
                 'table_id' => $request->table_id ?? null,
                 'waiter_id' => $request->waiter_id,
@@ -127,12 +135,14 @@ class OrderController extends Controller
                 'notes' => $request->notes,
                 'status' => 'pending',
                 'order_type' => $request->order_type ?? 'dine_in',
+                'order_source' => $request->order_source ?? 'waiter',
                 'payment_status' => 'pending',
             ]);
 
             // Create order items with default status as 'pending'
             foreach ($request->items as $item) {
                 OrderItem::create([
+                    'tenant_id' => Auth::user()->tenant_id,
                     'order_id' => $order->id,
                     'menu_item_id' => $item['menu_item_id'],
                     'quantity' => $item['quantity'],
@@ -145,13 +155,16 @@ class OrderController extends Controller
             }
 
             if (isset($request->table_id)) {
-                // Update table status
-                $table = Table::findOrFail($request->table_id);
+                // Update table status - verify table belongs to tenant
+                $table = Table::withoutGlobalScopes()
+                    ->where('tenant_id', Auth::user()->tenant_id)
+                    ->findOrFail($request->table_id);
                 $table->update(['status' => 'occupied']);
             }
 
             // Create invoice
             $invoice = Invoice::create([
+                'tenant_id' => Auth::user()->tenant_id,
                 'order_id' => $order->id,
                 'customer_name' => $request->customer_name ?? null,
                 'customer_phone' => $request->customer_phone ?? null,
@@ -185,13 +198,179 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create order: '.$e->getMessage(),
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function quickBilling(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            // Calculate subtotal from items
+            $subtotal = 0;
+            foreach ($request->items as $item) {
+                $subtotal += $item['unit_price'] * $item['quantity'];
+            }
+
+            // Get VAT and service charge from tenant
+            $tenant = Auth::user()->tenant;
+            $vatPercent = $tenant->vat_percent ?? 0;
+            $serviceCharge = $request->input('service_charge', 0);
+
+            // Calculate VAT on (subtotal + service charge)
+            $taxableAmount = $subtotal + $serviceCharge;
+            $vatAmount = round($taxableAmount * ($vatPercent / 100), 2);
+
+            // Calculate total
+            $totalAmount = $taxableAmount + $vatAmount;
+
+            // Generate unique order number
+            $orderNumber = $this->generateOrderNumber();
+
+            // Create order without table (takeaway/delivery type)
+            $order = Order::create([
+                'tenant_id' => Auth::user()->tenant_id,
+                'order_no' => $orderNumber,
+                'table_id' => null,
+                'waiter_id' => $request->waiter_id,
+                'entry_user_id' => Auth::id(),
+                'no_of_guests' => $request->no_of_guests,
+                'notes' => $request->notes,
+                'status' => 'pending',
+                'order_type' => 'takeaway',
+                'payment_status' => 'pending',
+            ]);
+
+            // Create order items
+            foreach ($request->items as $item) {
+                OrderItem::create([
+                    'tenant_id' => Auth::user()->tenant_id,
+                    'order_id' => $order->id,
+                    'menu_item_id' => $item['menu_item_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total' => $item['unit_price'] * $item['quantity'],
+                    'status' => 'pending',
+                    'is_kitchen_item' => true,
+                    'size' => $item['size'] ?? 1,
+                ]);
+            }
+
+            // Create invoice
+            $invoice = Invoice::create([
+                'tenant_id' => Auth::user()->tenant_id,
+                'order_id' => $order->id,
+                'customer_name' => $request->customer_name ?? null,
+                'customer_phone' => $request->customer_phone ?? null,
+                'delivery_address' => $request->delivery_address ?? null,
+                'invoice_number' => $this->generateInvoiceNumber(),
+                'subtotal' => $subtotal,
+                'vat_percent' => $vatPercent,
+                'vat_amount' => $vatAmount,
+                'service_charge' => $serviceCharge,
+                'total_amount' => $totalAmount,
+                'payment_status' => 'pending',
+                'notes' => $request->notes,
+            ]);
+
+            // Create KOT
+            $kot = $this->createKOT($order);
+
+            DB::commit();
+
+            // Load relationships for response
+            $order->load(['items.menuItem', 'waiter', 'invoice']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quick order created successfully',
+                'order' => $order,
+                'kot' => $kot->load('items.menuItem'),
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function addItems(Request $request, Order $order)
+    {
+        // Verify order belongs to current tenant
+        if ($order->tenant_id != auth()->user()->tenant_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to order',
+            ], 403);
+        }
+
+        if (!in_array($order->status, ['pending', 'confirmed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot add items to this order',
+            ], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create new order items
+            foreach ($request->items as $item) {
+                OrderItem::create([
+                    'tenant_id' => auth()->user()->tenant_id,
+                    'order_id' => $order->id,
+                    'menu_item_id' => $item['menu_item_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                    'total' => $item['unit_price'] * $item['quantity'],
+                    'status' => 'pending',
+                    'is_kitchen_item' => true,
+                    'size' => $item['size'] ?? 1,
+                ]);
+            }
+
+            // Create new KOT for the added items
+            $kot = $this->createKOTForNewItems($order, $request->items);
+
+            // Update order total
+            $this->updateOrderTotal($order);
+
+            // Update invoice total
+            $this->updateInvoiceTotal($order);
+
+            DB::commit();
+
+            $order->load(['items.menuItem', 'table', 'waiter', 'invoice']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Items added successfully',
+                'order' => $order,
+                'kot' => $kot->load('items.menuItem'),
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add items: '.$e->getMessage(),
             ], 500);
         }
     }
 
     public function destroy(Order $order)
     {
+        // Verify order belongs to current tenant
+        if ($order->tenant_id != auth()->user()->tenant_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to order',
+            ], 403);
+        }
+
         if ($order->status !== 'pending') {
             return response()->json([
                 'success' => false,
@@ -204,8 +383,8 @@ class OrderController extends Controller
             // Reverse inventory if it was deducted
             $this->reverseInventoryForOrder($order);
 
-            // Free up the table
-            if ($order->table) {
+            // Free up the table - verify table belongs to tenant
+            if ($order->table && $order->table->tenant_id == auth()->user()->tenant_id) {
                 $order->table->update(['status' => 'available']);
             }
 
@@ -228,55 +407,120 @@ class OrderController extends Controller
 
     public function getRecentOrders()
     {
-        $tables = Table::with(['orders' => function ($q) {
-            $q->where('status', '!=', 'completed')
-                ->where(function ($q) {
-                    $q->whereNull('payment_status')
-                        ->orWhere('payment_status', '!=', 'paid');
-                })
-                ->with(['items.menuItem', 'invoice', 'waiter'])
-                ->latest();
-        }])->where('status', 'occupied')
-            ->orderBy('name', 'asc')
-            ->get();
+        try {
+            $tenantId = auth()->user()->tenant_id;
 
-        // Get order counts by type
-        $allOrders = Order::with(['items', 'invoice'])->get();
-        $counts = [
-            'all' => $allOrders->where('status', '!=', 'completed')->count(),
-            'dine_in' => $allOrders->where('order_type', 'dine_in')->where('status', '!=', 'completed')->count(),
-            'takeaway' => $allOrders->where('order_type', 'takeaway')->where('status', '!=', 'completed')->count(),
-            'delivery' => $allOrders->where('order_type', 'delivery')->where('status', '!=', 'completed')->count(),
-            'online' => $allOrders->where('order_type', 'online')->where('status', '!=', 'completed')->count(),
-            'cancelled' => $allOrders->where('status', 'cancelled')->count(),
-            'history' => $allOrders->where('status', 'completed')->count(),
-        ];
+            \Log::info('getRecentOrders called', ['tenant_id' => $tenantId]);
 
-        return response()->json([
-            'success' => true,
-            'tables' => $tables->map(fn ($table) => [
-                'id' => $table->id,
-                'name' => $table->name,
-                'status' => $table->status->value,
-                'orders' => $table->orders->map(fn ($order) => [
-                    'id' => $order->id,
-                    'order_no' => $order->order_no,
-                    'order_type' => $order->order_type,
-                    'items' => $order->items->map(fn ($item) => [
-                        'id' => $item->id,
-                        'name' => $item->menuItem->name,
-                        'qty' => $item->quantity,
-                        'status' => $item->status ?? 'pending',
-                    ]),
-                    'items_count' => $order->items->sum('quantity'),
-                    'total_amount' => $order->invoice->total_amount ?? 0,
-                    'status' => $order->status,
-                    'created_at' => $order->created_at->diffForHumans(),
-                    'waiter' => $order->waiter?->name,
-                ]),
-            ]),
-            'counts' => $counts,
-        ]);
+            // Get all active orders for the tenant
+            $orders = Order::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('status', '!=', 'completed')
+                ->with(['items.menuItem', 'invoice', 'waiter', 'table'])
+                ->latest()
+                ->get();
+
+            \Log::info('Orders fetched', ['count' => $orders->count()]);
+
+            // Group orders by table
+            $ordersByTable = $orders->groupBy('table_id');
+
+            \Log::info('Orders grouped by table', ['groups' => $ordersByTable->keys()->toArray()]);
+
+            // Get table info for each group - only show tables belonging to this tenant
+            $tables = collect();
+            foreach ($ordersByTable as $tableId => $tableOrders) {
+                // Handle orders without table (takeaway/delivery)
+                if (!$tableId) {
+                    $tables->push([
+                        'id' => 0,
+                        'name' => 'No Table',
+                        'status' => 'available',
+                        'orders' => $tableOrders->map(fn ($order) => [
+                            'id' => $order->id,
+                            'order_no' => $order->order_no,
+                            'order_type' => $order->order_type,
+                            'items' => $order->items->map(fn ($item) => [
+                                'id' => $item->id,
+                                'name' => $item->menuItem ? $item->menuItem->name : 'Unknown',
+                                'qty' => $item->quantity,
+                                'status' => $item->status ?? 'pending',
+                            ]),
+                            'items_count' => $order->items->sum('quantity'),
+                            'total_amount' => $order->invoice ? $order->invoice->total_amount : 0,
+                            'status' => $order->status instanceof \BackedEnum ? $order->status->value : $order->status,
+                            'created_at' => $order->created_at ? $order->created_at->diffForHumans() : '',
+                            'waiter' => $order->waiter ? $order->waiter->name : null,
+                        ]),
+                    ]);
+                } else {
+                    // Only show tables that belong to this tenant
+                    $table = Table::withoutGlobalScopes()->find($tableId);
+                    if ($table) {
+                        // Log if table doesn't belong to tenant
+                        if ($table->tenant_id != $tenantId) {
+                            \Log::warning('Table belongs to different tenant', [
+                                'table_id' => $tableId,
+                                'table_tenant_id' => $table->tenant_id,
+                                'user_tenant_id' => $tenantId
+                            ]);
+                        } else {
+                            $tables->push([
+                                'id' => $table->id,
+                                'name' => $table->name,
+                                'status' => $table->status instanceof \BackedEnum ? $table->status->value : $table->status,
+                                'orders' => $tableOrders->map(fn ($order) => [
+                                    'id' => $order->id,
+                                    'order_no' => $order->order_no,
+                                    'order_type' => $order->order_type,
+                                    'items' => $order->items->map(fn ($item) => [
+                                        'id' => $item->id,
+                                        'name' => $item->menuItem ? $item->menuItem->name : 'Unknown',
+                                        'qty' => $item->quantity,
+                                        'status' => $item->status ?? 'pending',
+                                    ]),
+                                    'items_count' => $order->items->sum('quantity'),
+                                    'total_amount' => $order->invoice ? $order->invoice->total_amount : 0,
+                                    'status' => $order->status instanceof \BackedEnum ? $order->status->value : $order->status,
+                                    'created_at' => $order->created_at ? $order->created_at->diffForHumans() : '',
+                                    'waiter' => $order->waiter ? $order->waiter->name : null,
+                                ]),
+                            ]);
+                        }
+                    } else {
+                        \Log::warning('Table not found', ['table_id' => $tableId]);
+                    }
+                }
+            }
+
+            \Log::info('Final tables collection', ['count' => $tables->count()]);
+
+            // Get order counts by type
+            $allOrders = Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->with(['items', 'invoice'])->get();
+            $counts = [
+                'all' => $allOrders->where('status', '!=', 'completed')->count(),
+                'dine_in' => $allOrders->where('order_type', 'dine_in')->where('status', '!=', 'completed')->count(),
+                'takeaway' => $allOrders->where('order_type', 'takeaway')->where('status', '!=', 'completed')->count(),
+                'delivery' => $allOrders->where('order_type', 'delivery')->where('status', '!=', 'completed')->count(),
+                'online' => $allOrders->where('order_type', 'online')->where('status', '!=', 'completed')->count(),
+                'cancelled' => $allOrders->where('status', 'cancelled')->count(),
+                'history' => $allOrders->where('status', 'completed')->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'tables' => $tables,
+                'counts' => $counts,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('getRecentOrders error', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ], 500);
+        }
     }
 
     /**
@@ -304,7 +548,7 @@ class OrderController extends Controller
                     'unit_price' => $item->unit_price,
                     'total' => $item->total,
                     'status' => $item->status ?? 'pending',
-                    'image' => $item->menuItem->image_url,
+                    'image' => $item->menuItem->image_url ?: '/assets/images/defaultfood.png',
                 ]),
                 'total_amount' => $order->invoice->total_amount ?? 0,
                 'status' => $order->status,
@@ -492,25 +736,31 @@ class OrderController extends Controller
 
     public function editTable(Table $table)
     {
+        $tenantId = auth()->user()->tenant_id;
+
         // Get active orders for this table
-        $activeOrders = Order::with(['items.menuItem', 'waiter', 'kots.items.menuItem', 'invoice'])
+        $activeOrders = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['items.menuItem', 'waiter', 'kots.items.menuItem', 'invoice'])
             ->where('table_id', $table->id)
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         // Get all KOTs for this table's orders
-        $allKots = Kot::with(['items.menuItem', 'order'])
+        $allKots = Kot::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['items.menuItem', 'order'])
             ->whereHas('order', function ($query) use ($table) {
                 $query->where('table_id', $table->id)->where('status', '!=', \App\Enums\OrderStatusEnum::COMPLETED);
             })
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get menu data for adding new items
-        $menuItems = MenuItem::with('category')->get();
-        $categories = Category::orderBy('name')->get();
-        $waiters = User::get();
+        // Get menu data for adding new items - filter by tenant
+        $menuItems = MenuItem::withoutGlobalScopes()->where('tenant_id', $tenantId)->with('category')->get();
+        $categories = Category::withoutGlobalScopes()->where('tenant_id', $tenantId)->orderBy('name')->get();
+        $waiters = User::where('tenant_id', $tenantId)->get();
 
         // Backward-compat: pass legacy variable names for existing views
         $dishes = $menuItems;
@@ -524,6 +774,14 @@ class OrderController extends Controller
 
     public function addItemsToTable(Request $request, Table $table)
     {
+        // Verify table belongs to current tenant
+        if ($table->tenant_id != auth()->user()->tenant_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to table',
+            ], 403);
+        }
+
         $request->validate([
             'items' => 'required|array',
             'items.*.menu_item_id' => 'required|exists:menu_items,id',
@@ -534,10 +792,14 @@ class OrderController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
-            // Check if there are existing active orders for this table
-            $existingOrder = Order::where('table_id', $table->id)
+            // Check if there are existing active orders for this table (tenant-filtered)
+            $existingOrder = Order::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('table_id', $table->id)
                 ->whereNotIn('status', ['completed', 'cancelled'])
                 ->first();
 
@@ -548,6 +810,7 @@ class OrderController extends Controller
             } else {
                 // Create new order only if no active orders exist
                 $order = Order::create([
+                    'tenant_id' => $tenantId,
                     'order_no' => $this->generateOrderNumber(),
                     'table_id' => $table->id,
                     'waiter_id' => $request->waiter_id,
@@ -560,6 +823,7 @@ class OrderController extends Controller
 
                 // Create initial invoice
                 Invoice::create([
+                    'tenant_id' => $tenantId,
                     'order_id' => $order->id,
                     'invoice_number' => $this->generateInvoiceNumber(),
                     'subtotal' => 0,
@@ -576,6 +840,7 @@ class OrderController extends Controller
             foreach ($request->items as $item) {
                 $itemSize = $item['size'] ?? 1;
                 OrderItem::create([
+                    'tenant_id' => $tenantId,
                     'order_id' => $order->id,
                     'menu_item_id' => $item['menu_item_id'],
                     'quantity' => $item['quantity'],
@@ -624,7 +889,11 @@ class OrderController extends Controller
     {
         $this->authorize('checkout-view');
 
-        $orders = Order::with(['items.menuItem', 'invoice', 'waiter'])
+        $tenantId = auth()->user()->tenant_id;
+
+        $orders = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['items.menuItem', 'invoice', 'waiter'])
             ->where('table_id', $table->id)
             ->whereNotIn('status', ['completed', 'cancelled'])
             ->get();
@@ -657,6 +926,143 @@ class OrderController extends Controller
             'address',
             'contactPhone'
         ));
+    }
+
+    public function getCheckoutData(Table $table)
+    {
+        $this->authorize('checkout-view');
+
+        $tenantId = auth()->user()->tenant_id;
+
+        $orders = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['items.menuItem', 'invoice', 'waiter'])
+            ->where('table_id', $table->id)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active orders found for this table',
+            ], 404);
+        }
+
+        $subtotal = $orders->sum(fn($o) => $o->items->sum('total'));
+        $serviceChargeAmount = 0;
+        $vatPercent = 0;
+        $vatAmount = 0;
+        $grandTotal = $subtotal;
+
+        $siteName = app(\App\Services\WebsiteSettingService::class)->get('site_name', 'Restaurant');
+        $address = app(\App\Services\WebsiteSettingService::class)->get('address', '');
+        $contactPhone = app(\App\Services\WebsiteSettingService::class)->get('phone', '');
+
+        // Group items for display
+        $grouped = [];
+        foreach ($orders as $ord) {
+            foreach ($ord->items as $item) {
+                $menuItem = $item->menuItem ?? null;
+                $key = $item->menu_item_id . '-' . ($item->size ?? 1);
+                if (!isset($grouped[$key])) {
+                    $grouped[$key] = [
+                        'name' => $menuItem->name ?? 'Item',
+                        'quantity' => 0,
+                        'unit_price' => $item->unit_price ?? 0,
+                        'size' => $item->size ?? 1,
+                    ];
+                }
+                $grouped[$key]['quantity'] += $item->quantity ?? 0;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'table' => [
+                    'id' => $table->id,
+                    'name' => $table->name,
+                ],
+                'orders' => $orders,
+                'items' => array_values($grouped),
+                'subtotal' => $subtotal,
+                'service_charge_amount' => $serviceChargeAmount,
+                'vat_percent' => $vatPercent,
+                'vat_amount' => $vatAmount,
+                'grand_total' => $grandTotal,
+                'site_name' => $siteName,
+                'address' => $address,
+                'contact_phone' => $contactPhone,
+            ],
+        ]);
+    }
+
+    public function getOrderCheckoutData(Order $order)
+    {
+        $this->authorize('checkout-view');
+
+        $tenantId = auth()->user()->tenant_id;
+
+        $order->load(['items.menuItem', 'invoice', 'waiter', 'table']);
+
+        if ($order->tenant_id !== $tenantId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found',
+            ], 404);
+        }
+
+        $subtotal = $order->items->sum('total');
+        $serviceChargeAmount = $order->service_charge_amount ?? 0;
+        $vatPercent = $order->vat_percent ?? 0;
+        $vatAmount = $order->vat_amount ?? 0;
+        $grandTotal = $order->total_amount ?? $subtotal;
+
+        $siteName = app(\App\Services\WebsiteSettingService::class)->get('site_name', 'Restaurant');
+        $address = app(\App\Services\WebsiteSettingService::class)->get('address', '');
+        $contactPhone = app(\App\Services\WebsiteSettingService::class)->get('phone', '');
+
+        // Group items for display
+        $grouped = [];
+        foreach ($order->items as $item) {
+            $menuItem = $item->menuItem ?? null;
+            $key = $item->menu_item_id . '-' . ($item->size ?? 1);
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'menu_item_id' => $item->menu_item_id,
+                    'name' => $menuItem->name ?? 'Item',
+                    'quantity' => 0,
+                    'unit_price' => $item->unit_price ?? 0,
+                    'size' => $item->size ?? 1,
+                ];
+            }
+            $grouped[$key]['quantity'] += $item->quantity ?? 0;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'table' => [
+                    'id' => $order->table->id ?? null,
+                    'name' => $order->table->name ?? 'N/A',
+                ],
+                'order' => [
+                    'id' => $order->id,
+                    'order_type' => $order->order_type ?? 'dine_in',
+                    'status' => $order->status,
+                ],
+                'items' => array_values($grouped),
+                'subtotal' => $subtotal,
+                'service_charge' => $serviceChargeAmount,
+                'vat_percent' => $vatPercent,
+                'vat_amount' => $vatAmount,
+                'total_amount' => $grandTotal,
+                'invoice_number' => $order->invoice?->invoice_number ?? null,
+                'site_name' => $siteName,
+                'address' => $address,
+                'contact_phone' => $contactPhone,
+            ],
+        ]);
     }
 
     public function checkoutTable(Request $request, Table $table)
@@ -775,14 +1181,22 @@ class OrderController extends Controller
     private function createKOT(Order $order)
     {
         $date = now()->format('Ymd');
-        $lastKot = Kot::where('kot_number', 'like', "KOT-{$date}%")
+        $lastKot = Kot::withoutGlobalScopes()
+            ->where('kot_number', 'like', "KOT-{$date}%")
             ->orderBy('kot_number', 'desc')
             ->first();
 
         $newNumber = $lastKot ? (int) substr($lastKot->kot_number, -3) + 1 : 1;
+
+        // Ensure uniqueness by checking if this kot_number already exists
         $kotNumber = "KOT-{$date}-".str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        while (Kot::withoutGlobalScopes()->where('kot_number', $kotNumber)->exists()) {
+            $newNumber++;
+            $kotNumber = "KOT-{$date}-".str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        }
 
         $kot = Kot::create([
+            'tenant_id' => Auth::user()->tenant_id,
             'order_id' => $order->id,
             'kot_number' => $kotNumber,
             'status' => 'sent',
@@ -808,14 +1222,22 @@ class OrderController extends Controller
     private function createKOTForNewItems(Order $order, $items)
     {
         $date = now()->format('Ymd');
-        $lastKot = Kot::where('kot_number', 'like', "KOT-{$date}%")
+        $lastKot = Kot::withoutGlobalScopes()
+            ->where('kot_number', 'like', "KOT-{$date}%")
             ->orderBy('kot_number', 'desc')
             ->first();
 
         $newNumber = $lastKot ? (int) substr($lastKot->kot_number, -3) + 1 : 1;
+
+        // Ensure uniqueness by checking if this kot_number already exists
         $kotNumber = "KOT-{$date}-".str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        while (Kot::withoutGlobalScopes()->where('kot_number', $kotNumber)->exists()) {
+            $newNumber++;
+            $kotNumber = "KOT-{$date}-".str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        }
 
         $kot = Kot::create([
+            'tenant_id' => Auth::user()->tenant_id,
             'order_id' => $order->id,
             'kot_number' => $kotNumber,
             'status' => 'sent',
@@ -839,25 +1261,45 @@ class OrderController extends Controller
     private function generateOrderNumber()
     {
         $date = now()->format('Ymd');
-        $lastOrder = Order::where('order_no', 'like', "ORD-{$date}%")
+        $tenantId = auth()->user()->tenant_id;
+
+        $lastOrder = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('order_no', 'like', "ORD-{$date}%")
             ->orderBy('order_no', 'desc')
             ->first();
 
         $newNumber = $lastOrder ? (int) substr($lastOrder->order_no, -4) + 1 : 1;
 
-        return "ORD-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        // Ensure uniqueness by checking if this order_no already exists
+        $orderNo = "ORD-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        while (Order::withoutGlobalScopes()->where('order_no', $orderNo)->exists()) {
+            $newNumber++;
+            $orderNo = "ORD-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $orderNo;
     }
 
     private function generateInvoiceNumber()
     {
         $date = now()->format('Ymd');
-        $lastInvoice = Invoice::where('invoice_number', 'like', "INV-{$date}%")
+
+        $lastInvoice = Invoice::withoutGlobalScopes()
+            ->where('invoice_number', 'like', "INV-{$date}%")
             ->orderBy('invoice_number', 'desc')
             ->first();
 
         $newNumber = $lastInvoice ? (int) substr($lastInvoice->invoice_number, -4) + 1 : 1;
 
-        return "INV-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        // Ensure uniqueness by checking if this invoice_number already exists
+        $invoiceNo = "INV-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        while (Invoice::withoutGlobalScopes()->where('invoice_number', $invoiceNo)->exists()) {
+            $newNumber++;
+            $invoiceNo = "INV-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $invoiceNo;
     }
 
     /**
@@ -919,20 +1361,23 @@ class OrderController extends Controller
 
     public function pos()
     {
-        $tables = Table::orderBy('name')->get();
-        $categories = Category::where('status', 'active')->orderBy('name')->get();
-        $menuItems = MenuItem::with('category')->get();
-        $waiters = User::get();
-        $orders = Order::with(['waiter', 'table'])->latest()->get();
+        // Load data filtered by current tenant
+        $tenantId = auth()->user()->tenant_id;
+        $tables = Table::where('tenant_id', $tenantId)->orderBy('name')->get();
+        $categories = Category::where('tenant_id', $tenantId)->orderBy('name')->get();
+        $menuItems = MenuItem::where('tenant_id', $tenantId)->with('category')->get();
+        $waiters = User::where('tenant_id', $tenantId)->get();
+        $orders = Order::where('tenant_id', $tenantId)->with(['waiter', 'table'])->latest()->get();
 
         // Backward-compat: pass legacy variable names for existing POS view
         $dishes = $menuItems;
         $menus = $categories;
         $menuCategories = $categories;
+        $dishesByCategory = $menuItems->groupBy('category_id');
 
         return view('admin.order.pos', compact(
             'tables', 'menuItems', 'waiters', 'orders', 'categories',
-            'dishes', 'menus', 'menuCategories'
+            'dishes', 'menus', 'menuCategories', 'dishesByCategory'
         ));
     }
 
@@ -976,6 +1421,7 @@ class OrderController extends Controller
                 foreach ($request->items as $item) {
                     $itemSize = $item['size'] ?? 1;
                     OrderItem::create([
+                        'tenant_id' => Auth::user()->tenant_id,
                         'order_id' => $order->id,
                         'menu_item_id' => $item['menu_item_id'],
                         'quantity' => $item['quantity'],
@@ -991,12 +1437,13 @@ class OrderController extends Controller
                 $this->recalculateOrderTotals($order);
                 $kot = $this->createKOTForNewItems($order, $request->items);
 
-                $table = Table::findOrFail($request->table_id);
+                $table = Table::withoutGlobalScopes()->findOrFail($request->table_id);
                 $table->update(['status' => 'occupied']);
             } else {
                 $orderNumber = $this->generateOrderNumber();
 
                 $orderData = [
+                    'tenant_id' => Auth::user()->tenant_id,
                     'order_no' => $orderNumber,
                     'entry_user_id' => Auth::id(),
                     'notes' => $request->notes,
@@ -1020,6 +1467,7 @@ class OrderController extends Controller
 
                 foreach ($request->items as $item) {
                     OrderItem::create([
+                        'tenant_id' => Auth::user()->tenant_id,
                         'order_id' => $order->id,
                         'menu_item_id' => $item['menu_item_id'],
                         'quantity' => $item['quantity'],
@@ -1032,11 +1480,12 @@ class OrderController extends Controller
                 }
 
                 if ($request->order_type === 'dine_in') {
-                    $table = Table::findOrFail($request->table_id);
+                    $table = Table::withoutGlobalScopes()->findOrFail($request->table_id);
                     $table->update(['status' => 'occupied']);
                 }
 
                 Invoice::create([
+                    'tenant_id' => Auth::user()->tenant_id,
                     'order_id' => $order->id,
                     'invoice_number' => $this->generateInvoiceNumber(),
                     'subtotal' => $subtotal,
@@ -1071,6 +1520,30 @@ class OrderController extends Controller
                 'message' => 'Failed to create order: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    public function printBill($id)
+    {
+        $order = Order::with(['items.menuItem', 'table', 'invoice'])->findOrFail($id);
+        
+        $html = view('admin.order.bill', compact('order'))->render();
+        
+        return response()->json([
+            'success' => true,
+            'html' => $html
+        ]);
+    }
+
+    public function printKot($id)
+    {
+        $order = Order::with(['items.menuItem', 'table', 'kot'])->findOrFail($id);
+        
+        $html = view('admin.order.kot', compact('order'))->render();
+        
+        return response()->json([
+            'success' => true,
+            'html' => $html
+        ]);
     }
 
     public function orderdetailtable(Request $request)
@@ -1392,7 +1865,7 @@ class OrderController extends Controller
                         'menuItem' => $item->menuItem ? [
                             'id' => $item->menuItem->id,
                             'name' => $item->menuItem->name,
-                            'image_url' => $item->menuItem->image_url,
+                            'image_url' => $item->menuItem->image_url ?: '/assets/images/defaultfood.png',
                         ] : null,
                     ];
                 }),

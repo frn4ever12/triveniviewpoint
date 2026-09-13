@@ -10,6 +10,7 @@ class OrderItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'order_id',
         'menu_item_id',
         'kot_id',
@@ -48,5 +49,22 @@ class OrderItem extends Model
     public function kot()
     {
         return $this->belongsTo(Kot::class);
+    }
+
+    public function scopeForTenant($query, $tenantId)
+    {
+        return $query->where('tenant_id', $tenantId);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
     }
 }

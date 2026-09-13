@@ -27,8 +27,10 @@ class ProductController extends Controller
         DB::beginTransaction();
 
         try {
-            $product = Product::create($request->validated());
-           
+            $data = $request->validated();
+            $data['tenant_id'] = auth()->user()->tenant_id;
+            $product = Product::create($data);
+
             DB::commit();
             return redirect()->route('admin.products.index')
                 ->with('success', 'Product created successfully.');
@@ -39,24 +41,39 @@ class ProductController extends Controller
                 ->with('error', 'Failed to create label. Please try again.');
         }
     }
+
     public function show(Product $product)
     {
+        // Verify product belongs to current tenant
+        if ($product->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to product');
+        }
         return view('admin.product.show', compact('product'));
     }
+
     public function edit(Product $product)
     {
+        // Verify product belongs to current tenant
+        if ($product->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to product');
+        }
         return view('admin.product.edit', compact('product'));
     }
 
     public function update(ProductRequest $request, Product $product)
     {
+        // Verify product belongs to current tenant
+        if ($product->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to product');
+        }
+
         $data = $request->validated();
-    
+
         DB::beginTransaction();
         try {
-            $product->update($data);  
+            $product->update($data);
             DB::commit();
-    
+
             return redirect()->route('admin.products.index')
                 ->with('success', 'Product updated successfully.');
         } catch (\Exception $e) {
@@ -65,9 +82,14 @@ class ProductController extends Controller
                 ->with('error', 'Failed to update product. Please try again.');
         }
     }
-    
+
     public function destroy(Product $product)
     {
+        // Verify product belongs to current tenant
+        if ($product->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to product');
+        }
+
         DB::beginTransaction();
         try {
             $product->delete();

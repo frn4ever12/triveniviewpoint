@@ -515,12 +515,16 @@ class MenuItemSeeder extends Seeder
             ],
         ];
 
+        // Get first tenant from database
+        $tenant = \App\Models\Tenant::first();
+        $tenantId = $tenant ? $tenant->id : 1;
+
         foreach ($items as $data) {
             $menuItem = MenuItem::updateOrCreate(
-                ['slug' => $data['slug']],
-                array_merge($data, ['tenant_id' => 1])
+                ['slug' => $data['slug'], 'tenant_id' => $tenantId],
+                array_merge($data, ['tenant_id' => $tenantId])
             );
-            
+
             // Add image if menu item exists and doesn't have one
             if ($menuItem && !$menuItem->getFirstMedia('image')) {
                 $imageUrl = $this->getImageUrlForItem($data['slug']);

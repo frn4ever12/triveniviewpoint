@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CategorySeeder::class,
             MenuItemSeeder::class,
+            NepaliMenuItemSeeder::class,
             AboutSeeder::class,
             UnitSeeder::class,
             LabelSeeder::class,

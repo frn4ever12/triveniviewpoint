@@ -5,11 +5,11 @@
     integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
     crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.1/dist/feather.min.js"></script>
-<script src="{{ asset('assets/js/main.js') }}"></script>
-<script src="{{ asset('assets/js/feather.js') }}"></script>
-<script src="{{ asset('assets/js/toaster.js') }}"></script>
+<script src="{{ asset('assets/js/main.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('assets/js/feather.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('assets/js/toaster.js') }}?v={{ time() }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="{{ asset('assets/js/delete-handler.js') }}"></script>
+<script src="{{ asset('assets/js/delete-handler.js') }}?v={{ time() }}"></script>
 
-<script src="{{ asset('assets/js/nepali.datepicker.v5.0.6.min.js') }}"></script>
-<script src="{{ asset('assets/js/npdate.js') }}"></script>
+<script src="{{ asset('assets/js/nepali.datepicker.v5.0.6.min.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('assets/js/npdate.js') }}?v={{ time() }}"></script>

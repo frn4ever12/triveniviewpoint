@@ -29,6 +29,11 @@ Route::get('/restaurant/{slug}', [HomeController::class, 'tenant'])->name('tenan
 Route::get('/digitalmenu/{slug}', [HomeController::class, 'digitalmenu'])->name('digitalmenu');
 Route::get('/digitalmenu/{slug}/{table}', [HomeController::class, 'digitalmenuTable'])->name('digitalmenu-table');
 
+// QR Order API routes
+Route::post('/api/qr/order', [QrOrderController::class, 'placeOrder'])->name('qr.order.place');
+Route::get('/qr/track/{sessionToken}/{orderNo}', [QrOrderController::class, 'trackOrder'])->name('qr.order.track');
+Route::get('/qr/order/{sessionToken}/{orderNo}', [QrOrderController::class, 'trackOrder'])->name('qr.order.view');
+
 // Checkout Route
 Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardController::class, 'index'])
     ->middleware(['auth'])

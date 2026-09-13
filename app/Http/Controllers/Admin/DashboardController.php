@@ -15,16 +15,36 @@ use Illuminate\Support\Facades\DB;
 class DashboardController extends Controller
 {
     public function index(){
-      
-        $orders=Order::get();
+        $tenantId = auth()->user()->tenant_id;
+        $tenant = auth()->user()->tenant;
 
-        $orderitems=OrderItem::get();
+        // Calculate remaining trial days
+        $trialDaysLeft = 0;
+        $showTrialNotice = false;
+        if ($tenant && $tenant->trial_ends_at) {
+            $trialEndsAt = Carbon::parse($tenant->trial_ends_at);
+            $now = Carbon::now();
+            if ($trialEndsAt->isFuture()) {
+                $trialDaysLeft = (int) $now->diffInDays($trialEndsAt);
+                $showTrialNotice = true;
+            }
+        }
+
+        $orders = Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->get();
+
+        $orderitems = OrderItem::withoutGlobalScopes()->where('tenant_id', $tenantId)->get();
 
         // Orders today
-        $ordersToday = Order::whereDate('created_at', Carbon::today())->count();
+        $ordersToday = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', Carbon::today())
+            ->count();
 
         // Orders yesterday
-        $ordersYesterday = Order::whereDate('created_at', Carbon::yesterday())->count();
+        $ordersYesterday = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', Carbon::yesterday())
+            ->count();
 
         // Calculate percentage change
         if ($ordersYesterday > 0) {
@@ -37,7 +57,9 @@ class DashboardController extends Controller
         $ordersChange = round($ordersChange, 1);
 
 
-        $latestOrders = Order::with(['table'])
+        $latestOrders = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['table'])
             ->withSum('items', 'total')
             ->whereDate('created_at', Carbon::today())
             ->latest()
@@ -46,22 +68,28 @@ class DashboardController extends Controller
         
 
         // calculate status counts for badges
-        $statusCounts = Order::selectRaw('status, COUNT(*) as count')
+        $statusCounts = Order::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
 
         //tables
-        $tables=Table::get();
+        $tables = Table::withoutGlobalScopes()->where('tenant_id', $tenantId)->get();
 
-        $totalTables = Table::count();
+        $totalTables = Table::withoutGlobalScopes()->where('tenant_id', $tenantId)->count();
 
-        $occupiedTables = Table::where('status', TableStatusEnum::OCCUPIED)->count();
+        $occupiedTables = Table::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('status', TableStatusEnum::OCCUPIED)
+            ->count();
 
         $occupancyPercent = $totalTables > 0 ? round(($occupiedTables / $totalTables) * 100) : 0;
 
-        $latestTables = Table::
-            orderBy('updated_at', 'desc')
+        $latestTables = Table::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('updated_at', 'desc')
             ->take(5)
             ->get();
 
@@ -71,11 +99,15 @@ class DashboardController extends Controller
         $yesterday = Carbon::yesterday();
     
         // Total revenue today
-        $todaysRevenue = Invoice::whereDate('created_at', $today)
+        $todaysRevenue = Invoice::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', $today)
             ->sum('total_amount');
     
         // Total revenue yesterday
-        $yesterdaysRevenue = Invoice::whereDate('created_at', $yesterday)
+        $yesterdaysRevenue = Invoice::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('created_at', $yesterday)
             ->sum('total_amount');
     
         // Calculate percentage change
@@ -91,15 +123,17 @@ class DashboardController extends Controller
             $day = Carbon::today()->subDays($i);
             $weekLabels[] = $day->format('D'); // Mon, Tue, etc.
 
-            $weekRevenue[] = Invoice::whereDate('created_at', $day)
+            $weekRevenue[] = Invoice::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->whereDate('created_at', $day)
                 ->sum('total_amount');
         }        
 
         return view('dashboard',
         compact('tables','orders','orderitems','latestOrders',
         'statusCounts','latestTables','ordersToday','ordersYesterday','ordersChange','totalTables',
-        'occupiedTables','occupancyPercent','todaysRevenue','revenueChange','weekLabels', 
-        'weekRevenue',));
+        'occupiedTables','occupancyPercent','todaysRevenue','revenueChange','weekLabels',
+        'weekRevenue','trialDaysLeft','showTrialNotice'));
     }
 
     public function getTodaysDishRevenue(Request $request)

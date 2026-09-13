@@ -13,6 +13,7 @@ class WebsiteSetting extends Model implements HasMedia
     use HasFactory, InteractsWithMedia;
 
     protected $fillable = [
+        'tenant_id',
         'site_name',
         'tagline',
         'contact_email',
@@ -35,12 +36,25 @@ class WebsiteSetting extends Model implements HasMedia
         'updated_at' => 'datetime',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
+    }
+
     /**
-     * Get the first website setting or create a new one
+     * Get the first website setting for the current tenant or create a new one
      */
     public static function getSettings()
     {
-        return static::first() ?? static::create([]);
+        $tenantId = auth()->check() ? auth()->user()->tenant_id : null;
+        return static::withoutGlobalScopes()->where('tenant_id', $tenantId)->first() ?? static::create(['tenant_id' => $tenantId]);
     }
 
     /**

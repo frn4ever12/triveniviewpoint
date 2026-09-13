@@ -34,18 +34,22 @@ class PurchaseController extends Controller
 
     public function create()
     {
-        $suppliers = Supplier::active()->get();
-        $products = Product::all(['id', 'name']);
+        $tenantId = auth()->user()->tenant_id;
+        $suppliers = Supplier::withoutGlobalScopes()->where('tenant_id', $tenantId)->active()->get();
+        $products = Product::withoutGlobalScopes()->where('tenant_id', $tenantId)->get(['id', 'name']);
         return view('admin.purchase.create', compact('suppliers','products'));
     }
 
     public function store(PurchaseRequest $request)
     {
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
             $validated = $request->validated();
 
             $purchase = Purchase::create([
+                'tenant_id' => $tenantId,
                 'title' => $validated['title'],
                 'invoice_no' => $validated['invoice_no'] ?? null,
                 'purchase_date' => $validated['purchase_date'],
@@ -83,6 +87,7 @@ class PurchaseController extends Controller
                 $totalAmount = round($amountAfterDiscount + $vatAmount, 2);
 
                 $itemsPayload[] = [
+                    'tenant_id' => $tenantId,
                     'product_id' => $product,
                     'quantity' => $quantity,
                     'unit_rate' => $unitRate,
@@ -153,21 +158,38 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
+        // Verify purchase belongs to current tenant
+        if ($purchase->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to purchase');
+        }
         $purchase->load('items.product', 'supplier');
         return view('admin.purchase.show', compact('purchase'));
     }
 
     public function edit(Purchase $purchase)
     {
-        $suppliers = Supplier::active()->get();
-        $products = Product::all();
+        // Verify purchase belongs to current tenant
+        if ($purchase->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to purchase');
+        }
+
+        $tenantId = auth()->user()->tenant_id;
+        $suppliers = Supplier::withoutGlobalScopes()->where('tenant_id', $tenantId)->active()->get();
+        $products = Product::withoutGlobalScopes()->where('tenant_id', $tenantId)->get();
         $purchase->load('items');
-        $units = Unit::all();
+        $units = Unit::withoutGlobalScopes()->where('tenant_id', $tenantId)->get();
         return view('admin.purchase.edit', compact('purchase', 'suppliers','products','units'));
     }
 
     public function update(PurchaseRequest $request, Purchase $purchase)
     {
+        // Verify purchase belongs to current tenant
+        if ($purchase->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to purchase');
+        }
+
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
             $validated = $request->validated();
@@ -205,6 +227,7 @@ class PurchaseController extends Controller
                 $totalAmount = round($amountAfterDiscount + $vatAmount, 2);
 
                 $itemsPayload[] = [
+                    'tenant_id' => $tenantId,
                     'product_id' => $product,
                     'quantity' => $quantity,
                     'unit_rate' => $unitRate,
@@ -255,6 +278,11 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
+        // Verify purchase belongs to current tenant
+        if ($purchase->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to purchase');
+        }
+
         DB::beginTransaction();
         try {
             $purchase->items()->delete();

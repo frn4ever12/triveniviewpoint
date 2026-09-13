@@ -31,6 +31,7 @@ class MenuItemController extends Controller
 
         try {
             $data = $request->validated();
+            $data['tenant_id'] = auth()->user()->tenant_id;
 
             $item = new MenuItem($data);
             $item->calculateFinalPrice();
@@ -56,6 +57,10 @@ class MenuItemController extends Controller
 
     public function show(MenuItem $menuItem)
     {
+        // Verify menu item belongs to current tenant
+        if ($menuItem->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to menu item');
+        }
         $menuItem->load('media');
 
         return view('admin.menu-item.show', compact('menuItem'));
@@ -63,6 +68,10 @@ class MenuItemController extends Controller
 
     public function edit(MenuItem $menuItem)
     {
+        // Verify menu item belongs to current tenant
+        if ($menuItem->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to menu item');
+        }
         $menuItem->load('media');
 
         return view('admin.menu-item.edit', compact('menuItem'));
@@ -70,6 +79,11 @@ class MenuItemController extends Controller
 
     public function update(MenuItemRequest $request, MenuItem $menuItem)
     {
+        // Verify menu item belongs to current tenant
+        if ($menuItem->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to menu item');
+        }
+
         $data = $request->validated();
 
         DB::beginTransaction();
@@ -102,6 +116,11 @@ class MenuItemController extends Controller
 
     public function destroy(MenuItem $menuItem)
     {
+        // Verify menu item belongs to current tenant
+        if ($menuItem->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to menu item');
+        }
+
         DB::beginTransaction();
         try {
             $menuItem->clearMediaCollection('image');

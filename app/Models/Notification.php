@@ -2,25 +2,32 @@
 
 namespace App\Models;
 
-use App\Enums\CommonStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 
-class Unit extends Model
+class Notification extends Model
 {
-    protected $fillable = ['tenant_id', 'name'];
-
-    protected $casts = [
-        'status' => CommonStatusEnum::class,
+    protected $fillable = [
+        'tenant_id',
+        'type',
+        'title',
+        'message',
+        'data',
+        'read',
     ];
 
-    public function scopeActive($query)
-    {
-        return $query->where('status', CommonStatusEnum::ACTIVE);
-    }
+    protected $casts = [
+        'data' => 'array',
+        'read' => 'boolean',
+    ];
 
     public function scopeForTenant($query, $tenantId)
     {
         return $query->where('tenant_id', $tenantId);
+    }
+
+    public function scopeUnread($query)
+    {
+        return $query->where('read', false);
     }
 
     protected static function boot()

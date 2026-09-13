@@ -127,8 +127,8 @@
                     <!-- Category Navigation -->
                     <div class="pos-categories" id="menuCategorySlider">
                         <button class="pos-cat-btn active" data-category="all">All</button>
-                        @foreach ($menuCategories as $menuCategory)
-                            <button class="pos-cat-btn" data-category="{{ $menuCategory->id }}">{{ $menuCategory->name }}</button>
+                        @foreach ($categories as $category)
+                            <button class="pos-cat-btn" data-category="{{ $category->id }}">{{ $category->name }}</button>
                         @endforeach
                     </div>
                     <!-- Search -->
@@ -143,46 +143,52 @@
                 <!-- Menu Items -->
                 <div class="pos-items-container" id="menuItemsContainer">
                     <div id="menuItemsGrid">
-                        @php
-                            $dishesByMenu = $dishes->groupBy('menu_id');
-                        @endphp
+                        @if($dishesByCategory->isEmpty())
+                            <div class="text-center py-5">
+                                <p class="text-muted">No menu items found. Please add menu items to categories.</p>
+                                <p class="text-muted small">Categories: {{ $categories->count() }} | Menu Items: {{ $menuItems->count() }}</p>
+                            </div>
+                        @else
+                            @foreach ($categories as $category)
+                                @if ($dishesByCategory->has($category->id) && $dishesByCategory[$category->id]->count() > 0)
+                                    <div class="pos-menu-section" data-category-id="{{ $category->id }}">
+                                        <div class="pos-menu-title">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                                            </svg>
+                                            {{ $category->name }}
+                                            <span class="badge-count">{{ $dishesByCategory[$category->id]->count() }} items</span>
+                                        </div>
 
-                        @foreach ($menus as $menu)
-                            @if ($dishesByMenu->has($menu->id) && $dishesByMenu[$menu->id]->count() > 0)
-                                <div class="pos-menu-section" data-category-id="{{ $menu->menu_category_id }}">
-                                    <div class="pos-menu-title">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                                        </svg>
-                                        {{ $menu->name }}
-                                        <span class="badge-count">{{ $dishesByMenu[$menu->id]->count() }} items</span>
-                                    </div>
-
-                                    <div class="pos-items-grid">
-                                        @foreach ($dishesByMenu[$menu->id] as $dish)
-                                            <div class="pos-item-card"
-                                                 data-menu-id="{{ $dish->menu_id }}"
-                                                 data-category-id="{{ $dish->category_id }}"
-                                                 onclick='addToCart({{ $dish->id }}, @json($dish->name), {{ (float) ($dish->final_price ?? $dish->price) }}, @json($dish->image_url))'>
-                                                <div class="pos-item-img-wrap">
-                                                    <img src="{{ $dish->image_url ?: asset('assets/images/defaultfood.png') }}" alt="{{ $dish->name }}" class="pos-item-img">
-                                                    <div class="pos-item-add-overlay">
-                                                        <div class="pos-item-add-circle">+</div>
+                                        <div class="pos-items-grid">
+                                            @foreach ($dishesByCategory[$category->id] as $dish)
+                                                <div class="pos-item-card"
+                                                     data-category-id="{{ $dish->category_id }}"
+                                                     onclick='addToCart({{ $dish->id }}, @json($dish->name), {{ (float) ($dish->final_price ?? $dish->price) }}, @json($dish->image_url ?: '/assets/images/defaultfood.png'))'>
+                                                    <div class="pos-item-img-wrap">
+                                                        @if($dish->getFirstMediaUrl('image'))
+                                                            <img src="{{ $dish->getFirstMediaUrl('image') }}" alt="{{ $dish->name }}" class="pos-item-img">
+                                                        @else
+                                                            <img src="{{ asset('assets/images/defaultfood.png') }}" alt="{{ $dish->name }}" class="pos-item-img">
+                                                        @endif
+                                                        <div class="pos-item-add-overlay">
+                                                            <div class="pos-item-add-circle">+</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="pos-item-info">
+                                                        <div class="pos-item-name">{{ $dish->name }}</div>
+                                                        <div class="pos-item-price">Rs {{ number_format($dish->final_price ?? $dish->price, 0) }}</div>
+                                                        @if(($dish->original_price ?? 0) > ($dish->final_price ?? $dish->price))
+                                                            <div class="pos-item-price-orig">Rs {{ number_format($dish->original_price, 0) }}</div>
+                                                        @endif
                                                     </div>
                                                 </div>
-                                                <div class="pos-item-info">
-                                                    <div class="pos-item-name">{{ $dish->name }}</div>
-                                                    <div class="pos-item-price">Rs {{ number_format($dish->final_price ?? $dish->price, 0) }}</div>
-                                                    @if(($dish->original_price ?? 0) > ($dish->final_price ?? $dish->price))
-                                                        <div class="pos-item-price-orig">Rs {{ number_format($dish->original_price, 0) }}</div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                            @endforeach
+                                        </div>
                                     </div>
-                                </div>
-                            @endif
-                        @endforeach
+                                @endif
+                            @endforeach
+                        @endif
                     </div>
                 </div>
             </div>
@@ -324,14 +330,15 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center py-4">
-                    <div class="pos-success-icon mb-3">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <div style="width:60px;height:60px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
                         </svg>
                     </div>
                     <h6 class="mb-2">Order Created Successfully!</h6>
                     <p class="text-muted mb-3" id="orderDetails">Order confirmed!</p>
-                    <div class="d-grid gap-2">                        <button class="pos-btn pos-btn-modal-bill w-100" onclick="printOrderBill()">
+                    <div class="d-grid gap-2">
+                        <button class="pos-btn pos-btn-modal-bill w-100" onclick="printOrderBill()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                             Print Bill
                         </button>
@@ -339,9 +346,6 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                             Print KOT
                         </button>
-                        <button class="pos-btn pos-btn-primary w-100" onclick="quickCheckout()" id="quickCheckoutBtn" style="display:none;">Quick Checkout</button>
-                        <a href="#" id="checkoutBtn" class="pos-btn pos-btn-info w-100" style="display:none;text-decoration:none;">Checkout</a>
-                        <button class="pos-btn pos-btn-modal-neworder w-100" data-bs-dismiss="modal" onclick="startNewOrder()">Start New Order</button>
                     </div>
                 </div>
             </div>
@@ -529,17 +533,36 @@
 
     <!-- Checkout Modal -->
     <div class="modal fade" id="checkoutModal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header" style="background:#10b981;color:#fff;border-radius:10px 10px 0 0;">
-                    <h5 class="modal-title">Checkout Dashboard</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 98vw;">
+            <div class="modal-content" style="border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; max-height: 95vh;">
+                <div class="modal-header" style="background: white; border: 1px solid #e5e7eb; border-bottom: none; padding: 8px 12px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h5 class="modal-title mb-0" style="font-size: 14px; font-weight: 700; color: #1f2937;">Checkout - <span id="checkoutTableName">Table 1</span></h5>
+                    </div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button type="button" class="btn btn-sm" onclick="toggleQuickMode()" style="font-size: 10px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px;">Switch to Quick Mode</button>
+                        <button type="button" class="btn btn-sm" onclick="downloadInvoice()" style="font-size: 10px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px;">Download</button>
+                        <button type="button" class="btn btn-sm" onclick="printEstimate()" style="font-size: 10px; padding: 4px 8px; background: #3b82f6; color: white; border: none; border-radius: 4px;">Print Estimate</button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-left: 4px; padding: 0; width: 20px; height: 20px;"></button>
+                    </div>
                 </div>
-                <div class="modal-body p-0">
-                    <iframe src="{{ route('admin.orders.checkout-dashboard') }}" style="width:100%;height:600px;border:none;" onload="this.style.height = this.contentWindow.document.body.scrollHeight + 'px'"></iframe>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="pos-btn" style="background:var(--pos-surface);color:var(--pos-text);" data-bs-dismiss="modal">Close</button>
+                <div class="modal-body p-0" style="background: #f8f9fa; flex: 1; overflow: hidden; display: flex;">
+                    <div id="checkoutContent" style="padding: 8px; flex: 0 0 70%; overflow-y: auto;">
+                        <div style="text-align: center; padding: 20px; color: #64748b;">
+                            <div style="font-size: 1.5rem; margin-bottom: 8px;">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <p style="font-size: 12px;">Loading checkout data...</p>
+                        </div>
+                    </div>
+                    <div id="estimateInvoicePanel" style="flex: 0 0 30%; background: #fef3c7; padding: 12px; overflow-y: auto; border-left: 1px solid #fcd34d; flex-shrink: 0;">
+                        <div style="text-align: center; font-weight: 700; color: #92400e; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #fcd34d; font-size: 14px;">ESTIMATE INVOICE</div>
+                        <div id="estimateInvoiceContent">
+                            <div style="text-align: center; color: #78350f; padding: 12px; font-size: 12px;">
+                                Loading estimate...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -548,6 +571,407 @@
     @include('admin.includes.bottom')
 
     <!-- POS JavaScript -->
-    <script src="{{ asset('assets/js/pos.js') }}"></script>
+    <script src="{{ asset('assets/js/pos.js') }}?v={{ time() }}"></script>
+
+    <style>
+        .size-btn-inline {
+            padding: 8px 4px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 600;
+            transition: all 0.15s;
+            min-width: 35px;
+        }
+        .size-btn-inline:hover {
+            background: #e5e7eb;
+        }
+        .size-btn-inline.active {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+        }
+    </style>
+
+    <script>
+        // Checkout Modal Functionality
+        let currentTableId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkoutModal = document.getElementById('checkoutModal');
+            
+            // Load checkout data when modal opens
+            checkoutModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                const tableId = button.getAttribute('data-table-id');
+                const tableName = button.getAttribute('data-table-name');
+                
+                if (tableId) {
+                    currentTableId = tableId;
+                    document.getElementById('checkoutTableName').textContent = tableName || 'Table ' + tableId;
+                    loadCheckoutData(tableId);
+                }
+            });
+
+        });
+
+        function loadCheckoutData(tableId) {
+            const contentDiv = document.getElementById('checkoutContent');
+            contentDiv.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: #64748b;">
+                    <div style="font-size: 3rem; margin-bottom: 16px;">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                    <p style="font-size: 1.1rem;">Loading checkout data...</p>
+                </div>
+            `;
+
+            fetch(`/admin/orders/table/${tableId}/checkout-data`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        renderCheckoutContent(data.data);
+                    } else {
+                        contentDiv.innerHTML = `
+                            <div style="text-align: center; padding: 60px 20px; color: #dc2626;">
+                                <div style="font-size: 3rem; margin-bottom: 16px;">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <p style="font-size: 1.1rem;">${data.message || 'Failed to load checkout data'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading checkout data:', error);
+                    contentDiv.innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px; color: #dc2626;">
+                            <div style="font-size: 3rem; margin-bottom: 16px;">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <p style="font-size: 1.1rem;">Network error occurred</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderCheckoutContent(data) {
+            const contentDiv = document.getElementById('checkoutContent');
+            const estimateDiv = document.getElementById('estimateInvoiceContent');
+            const items = data.items || [];
+            const table = data.table || {};
+            
+            let itemsHtml = items.map((item, index) => {
+                const basePrice = item.unit_price / (item.size || 1);
+                const sizeLabel = item.size === 0.5 ? 'Half' : item.size === 1 ? 'Full' : '';
+                return `
+                <tr data-item-key="${item.menu_item_id}-${item.size}" data-base-price="${basePrice}" data-quantity="${item.quantity}">
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="size-btn-inline ${item.size === 0.5 ? 'active' : ''}" onclick="changeCheckoutItemSize('${item.menu_item_id}-${item.size}', 0.5, this)">Half</button>
+                            <button class="size-btn-inline ${item.size === 1 ? 'active' : ''}" onclick="changeCheckoutItemSize('${item.menu_item_id}-${item.size}', 1, this)">Full</button>
+                        </div>
+                    </td>
+                    <td>${item.quantity}</td>
+                    <td class="item-rate">Rs ${parseFloat(item.unit_price).toFixed(2)}</td>
+                    <td>0.00</td>
+                    <td class="item-total">Rs ${parseFloat(item.unit_price * item.quantity).toFixed(2)}</td>
+                </tr>
+            `}).join('');
+
+            if (items.length === 0) {
+                itemsHtml = '<tr><td colspan="7" style="text-align:center;padding:20px;">No items</td></tr>';
+            }
+
+            // Main checkout content (without estimate invoice)
+            contentDiv.innerHTML = `
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap;">
+                    <button class="btn btn-sm" style="font-size: 10px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px;">Split Bill</button>
+                    <button class="btn btn-sm" style="font-size: 10px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px;">Complimentary</button>
+                    <button class="btn btn-sm" style="font-size: 10px; padding: 4px 8px; border: 1px solid #e5e7eb; background: white; border-radius: 4px;">Add Extra Charges</button>
+                </div>
+
+                <!-- Items Table -->
+                <div style="background: white; border-radius: 4px; padding: 8px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                    <h6 style="font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-size: 11px;">All Items</h6>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f9fafb;">
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">S.N</th>
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Item</th>
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Size</th>
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">QTY</th>
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Rate</th>
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Discount</th>
+                                <th style="padding: 4px 6px; text-align: left; font-size: 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Item Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Customer / Staff + Summary -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <!-- Customer / Staff -->
+                    <div style="background: white; border-radius: 4px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                        <div style="display: flex; gap: 4px; margin-bottom: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px;">
+                            <button class="btn btn-sm active" style="font-size: 10px; padding: 2px 8px; border: none; background: none; color: #3b82f6; border-bottom: 2px solid #3b82f6; border-radius: 0;">Customer</button>
+                            <button class="btn btn-sm" style="font-size: 10px; padding: 2px 8px; border: none; background: none; color: #6b7280; border-radius: 0;">Staff</button>
+                        </div>
+                        <input type="text" style="width: 100%; padding: 4px 6px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 10px;" placeholder="Search or select customer...">
+                        <!-- Remarks -->
+                        <div style="margin-top: 6px;">
+                            <textarea style="width: 100%; padding: 4px 6px; border: 1px solid #e5e7eb; border-radius: 4px; resize: vertical; font-size: 10px;" rows="2" placeholder="Add remarks to invoice"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div style="background: white; border-radius: 4px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                        <h6 style="font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-size: 11px;">Totals</h6>
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #6b7280; font-size: 10px;">Item Total</span>
+                            <span style="font-weight: 600; color: #1f2937; font-size: 10px;">Rs ${parseFloat(data.subtotal).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #6b7280; font-size: 10px;">Sub Total</span>
+                            <span style="font-weight: 600; color: #1f2937; font-size: 10px;">Rs ${parseFloat(data.subtotal).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #6b7280; font-size: 10px;">Discount (-)</span>
+                            <span style="font-weight: 600; color: #1f2937; font-size: 10px;">0.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #6b7280; font-size: 10px;">Taxable Amount</span>
+                            <span style="font-weight: 600; color: #1f2937; font-size: 10px;">Rs ${parseFloat(data.subtotal).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9;">
+                            <span style="color: #6b7280; font-size: 10px;">+ No Tax</span>
+                            <span style="font-weight: 600; color: #1f2937; font-size: 10px;">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; margin-top: 2px;">
+                            <span style="color: #1f2937; font-weight: 600; font-size: 10px;">Total Amount</span>
+                            <span style="font-weight: 700; color: #059669; font-size: 12px;">Rs ${parseFloat(data.grand_total).toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tender Amount + Payment Mode -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <!-- Tender Amount -->
+                    <div style="background: white; border-radius: 4px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                        <h6 style="font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-size: 11px;">Tender Amount</h6>
+                        <input type="number" id="tenderAmount" value="${parseFloat(data.grand_total).toFixed(2)}" style="width: 100%; padding: 4px 6px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                    </div>
+
+                    <!-- Payment Mode -->
+                    <div style="background: white; border-radius: 4px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;">
+                        <h6 style="font-weight: 700; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-size: 11px;">Payment Mode *</h6>
+                        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                            <button class="btn btn-sm active" style="border: 1px solid #e5e7eb; background: #ecfdf5; color: #059669; border-color: #059669; font-size: 10px; padding: 4px 8px; border-radius: 4px;" onclick="selectPaymentStatus(this, 'paid')">Paid</button>
+                            <button class="btn btn-sm" style="border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 10px; padding: 4px 8px; border-radius: 4px;" onclick="selectPaymentStatus(this, 'unpaid')">Unpaid / Credit</button>
+                            <button class="btn btn-sm" style="border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 10px; padding: 4px 8px; border-radius: 4px;" onclick="selectPaymentStatus(this, 'partial')">Partial</button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;">
+                            <button class="btn btn-sm active" style="border: 1px solid #e5e7eb; background: #eff6ff; color: #3b82f6; border-color: #3b82f6; font-size: 9px; padding: 4px 2px; border-radius: 4px;" onclick="selectPaymentMethod(this, 'cash')">Cash</button>
+                            <button class="btn btn-sm" style="border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 9px; padding: 4px 2px; border-radius: 4px;" onclick="selectPaymentMethod(this, 'nepal_pay')">Nepal Pay</button>
+                            <button class="btn btn-sm" style="border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 9px; padding: 4px 2px; border-radius: 4px;" onclick="selectPaymentMethod(this, 'card')">Card</button>
+                            <button class="btn btn-sm" style="border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 9px; padding: 4px 2px; border-radius: 4px;" onclick="selectPaymentMethod(this, 'fonepay')">Fonepay</button>
+                            <button class="btn btn-sm" style="border: 1px solid #e5e7eb; background: white; color: #374151; font-size: 9px; padding: 4px 2px; border-radius: 4px;" onclick="selectPaymentMethod(this, 'bank_transfer')">Bank Transfer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Net Sales -->
+                <div style="background: #ecfdf5; border-radius: 4px; padding: 6px; text-align: center; margin-bottom: 6px;">
+                    <div style="color: #059669; font-weight: 600; margin-bottom: 2px; font-size: 9px;">Net sales amount</div>
+                    <div style="color: #059669; font-weight: 700; font-size: 12px;">Rs ${parseFloat(data.grand_total).toFixed(2)}</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn flex-grow-1" style="background: #9ca3af; color: white; padding: 6px; font-size: 10px; font-weight: 700; border: none; border-radius: 4px;" onclick="printEstimate()">Confirm & Print</button>
+                    <button class="btn flex-grow-1" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 6px; font-size: 10px; font-weight: 700; border: none; border-radius: 4px;" onclick="completeCheckout()">Confirm Checkout</button>
+                </div>
+            `;
+
+            // Estimate invoice content (separate panel)
+            estimateDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Invoice No:</span>
+                    <span>##</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Date:</span>
+                    <span>${new Date().toLocaleDateString()}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Dine In:</span>
+                    <span>${table.name || 'N/A'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Customer:</span>
+                    <span>Cash Customer</span>
+                </div>
+                <div style="margin: 10px 0; padding: 8px 0; border-top: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #78350f; font-size: 12px;">Particular</div>
+                    ${items.map(item => `
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; color: #78350f; font-size: 12px;">
+                            <span>${item.name}</span>
+                            <span>${parseFloat(item.unit_price).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; color: #78350f; font-size: 12px;">
+                            <span>${item.quantity}</span>
+                            <span>${parseFloat(item.unit_price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Total (Particular/QTY)</span>
+                    <span>${items.length}/3</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Rs</span>
+                    <span>${parseFloat(data.grand_total).toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Amount in words:</span>
+                    <span>Two Hundred Sixty Five Nepalese Rupee Only</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Payment Mode:</span>
+                    <span>Unpaid (Rs ${parseFloat(data.grand_total).toFixed(2)})</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>KOT No: 1 (by ${data.site_name || 'Staff'})</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Billed By: ${data.site_name || 'Staff'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 5px 0; color: #78350f; font-size: 12px;">
+                    <span>Service Duration: 4 days 21 hrs 15 mins</span>
+                </div>
+                <div style="text-align: center; margin-top: 12px; font-weight: 600; color: #92400e; font-size: 11px;">
+                    This is not a Tax Invoice!<br>
+                    Kindly accept the original bill from the counter.
+                </div>
+                <div style="text-align: center; margin-top: 12px; color: #78350f; font-size: 11px;">
+                    Thank You<br>
+                    Thank you for your visit! Visit again
+                </div>
+            `;
+        }
+
+        let selectedPaymentStatus = 'paid';
+        let selectedPaymentMethod = 'cash';
+
+        function selectPaymentStatus(btn, status) {
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.btn').forEach(b => {
+                b.style.background = 'white';
+                b.style.color = '#374151';
+                b.style.borderColor = '#e5e7eb';
+            });
+            btn.style.background = '#ecfdf5';
+            btn.style.color = '#059669';
+            btn.style.borderColor = '#059669';
+            selectedPaymentStatus = status;
+        }
+
+        function selectPaymentMethod(btn, method) {
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.btn').forEach(b => {
+                b.style.background = 'white';
+                b.style.color = '#374151';
+                b.style.borderColor = '#e5e7eb';
+            });
+            btn.style.background = '#eff6ff';
+            btn.style.color = '#3b82f6';
+            btn.style.borderColor = '#3b82f6';
+            selectedPaymentMethod = method;
+        }
+
+        function toggleQuickMode() {
+            console.log('Toggle Quick Mode');
+        }
+
+        function downloadInvoice() {
+            window.print();
+        }
+
+        function printEstimate() {
+            window.print();
+        }
+
+        async function completeCheckout() {
+            const tenderAmount = parseFloat(document.getElementById('tenderAmount').value) || 0;
+            const totalAmount = parseFloat(document.querySelector('#checkoutContent [style*="color: #059669"]').textContent.replace('Rs ', '')) || 0;
+            if (tenderAmount < totalAmount && selectedPaymentStatus === 'paid') {
+                alert('Amount received cannot be less than total amount');
+                return;
+            }
+            try {
+                const response = await fetch(`/admin/orders/table/${currentTableId}/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify({
+                        payment_method: selectedPaymentMethod,
+                        tender_amount: tenderAmount,
+                        total_amount: totalAmount,
+                        subtotal: 0,
+                        service_charge_amount: 0,
+                        vat_percent: 0,
+                        vat_amount: 0,
+                    }),
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('Checkout completed successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Checkout failed');
+                }
+            } catch (error) {
+                alert('Network error occurred');
+            }
+        }
+
+        function changeCheckoutItemSize(itemKey, newSize, btn) {
+            const row = btn.closest('tr');
+            if (!row) return;
+
+            const basePrice = parseFloat(row.dataset.basePrice);
+            const quantity = parseInt(row.dataset.quantity);
+
+            // Update button states
+            const buttons = row.querySelectorAll('.size-btn-inline');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Calculate new price
+            const newPrice = basePrice * newSize;
+            const newTotal = newPrice * quantity;
+
+            // Update rate and total cells
+            row.querySelector('.item-rate').textContent = 'Rs ' + newPrice.toFixed(2);
+            row.querySelector('.item-total').textContent = 'Rs ' + newTotal.toFixed(2);
+        }
+    </script>
 </body>
 </html>

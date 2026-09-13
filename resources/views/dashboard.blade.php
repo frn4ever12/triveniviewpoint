@@ -372,6 +372,23 @@
 @endpush
 @section('content')
     <div class="container-fluid py-4">
+        @if($showTrialNotice)
+        <!-- Trial Period Notice -->
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #fcd34d; border-radius: 8px;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong style="color: #92400e;">{{ $trialDaysLeft }} days left in your trial period!</strong>
+                    <span style="color: #78350f; margin-left: 8px;">Upgrade before your trial period ends to keep all premium features.</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="#" class="btn btn-sm btn-outline-warning" style="border-color: #d97706; color: #d97706;">Explore Plans</a>
+                    <a href="#" class="btn btn-sm btn-warning" style="background: #d97706; border-color: #d97706;">Upgrade Plan</a>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 12px; right: 12px;"></button>
+        </div>
+        @endif
+
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>

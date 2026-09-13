@@ -25,9 +25,12 @@
                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                             <h5 class="mb-0 fw-bold" style="font-size:.95rem;">Recent Orders</h5>
                             <div class="d-flex gap-2">
-                                <a href="{{ route('admin.orders.pos') }}" class="btn btn-sm btn-primary rounded-3">
+                                <button type="button" class="btn btn-sm btn-primary rounded-3" id="addNewOrderBtn" onclick="openAddOrderModal()">
                                     <i class="bi bi-plus-lg me-1"></i> Add New Order
-                                </a>
+                                </button>
+                                <button class="btn btn-sm btn-success rounded-3" onclick="openQuickBilling()">
+                                    <i class="bi bi-lightning me-1"></i> Quick Billing
+                                </button>
                                 <button class="btn btn-sm btn-outline-secondary rounded-3" onclick="refreshOrders()">
                                     <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                                 </button>
@@ -101,6 +104,219 @@
             </div>
         </div>
 
+        {{-- Quick Billing Modal --}}
+        <div class="modal fade" id="quickBillingModal" tabindex="-1">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content" style="border-radius:14px;border:none;">
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <h5 class="modal-title mb-0 fw-bold"><i class="bi bi-lightning text-warning me-2"></i>Quick Billing</h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="form-select form-select-sm" id="quickWaiterSelect" style="width:auto;border-radius:8px;">
+                                <option value="">Assign Waiter</option>
+                                @foreach ($waiters as $waiter)
+                                    <option value="{{ $waiter->id }}">{{ $waiter->name }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                    </div>
+                    <div class="modal-body p-4 row g-4">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0" style="border-radius:10px 0 0 10px;"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control border-start-0" placeholder="Search dishes..." id="quickDishSearch" style="border-radius:0 10px 10px 0;">
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="list-group menu-categories" id="quickMenuCategories" style="border-radius:10px;">
+                                        <button class="list-group-item list-group-item-action active" data-menu-id="all">All Items</button>
+                                        @foreach ($menus as $menu)
+                                            <button class="list-group-item list-group-item-action" data-menu-id="{{ $menu->id }}">
+                                                {{ $menu->name }}
+                                                <span class="badge bg-light text-dark ms-auto">{{ $menu->dishes->count() }}</span>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <h6 id="quickMenuTitle" class="fw-bold mb-2" style="font-size:.85rem;">All Items</h6>
+                                    <div class="row g-2" id="quickDishesContainer" style="max-height:420px;overflow-y:auto;">
+                                        @foreach ($dishes as $dish)
+                                            <div class="col-6 col-lg-4 dish-card-wrap" data-menu-id="{{ $dish->menu_id }}">
+                                                <div class="dish-card-new">
+                                                    <img src="{{ $dish->image_url ?: asset('assets/images/defaultfood.png') }}"
+                                                         class="dish-img-new" alt="{{ $dish->name }}">
+                                                    <div class="dish-info-new">
+                                                        <h6 class="mb-1" style="font-size:.82rem;">{{ $dish->name }}</h6>
+                                                        <p class="text-danger fw-bold mb-1" style="font-size:.85rem;">Rs {{ number_format($dish->final_price ?? $dish->price, 2) }}</p>
+                                                        <p class="text-muted small mb-2" style="font-size:.72rem;">{{ Str::limit($dish->description, 40) }}</p>
+                                                        <button class="btn btn-outline-danger btn-sm w-100 rounded-3"
+                                                                onclick="addToQuickCart({{ $dish->id }}, '{{ $dish->name }}', {{ $dish->final_price ?? $dish->price }}, '{{ $dish->image_url ?: asset('assets/images/defaultfood.png') }}')">
+                                                            <i class="bi bi-cart-plus me-1"></i> Add
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded-3 p-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0 fw-bold" style="font-size:.85rem;"><i class="bi bi-cart me-1"></i> Cart</h6>
+                                    <button class="btn btn-link btn-sm text-danger p-0" id="clearQuickCartBtn" style="display:none;text-decoration:none;">Clear</button>
+                                </div>
+                                <div id="quickCartItems" class="mb-3" style="max-height:280px;overflow-y:auto;">
+                                    <p class="text-muted text-center small">No items selected.</p>
+                                </div>
+                                <hr class="my-2">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control form-control-sm mb-2 rounded-3" placeholder="Customer Name" id="quickCustomerName">
+                                    <input type="number" class="form-control form-control-sm mb-2 rounded-3" placeholder="No. of guests" id="quickGuestCount" min="1">
+                                    <textarea class="form-control form-control-sm rounded-3" placeholder="Notes..." id="quickOrderNotes" rows="2"></textarea>
+                                </div>
+                                <div class="bg-white rounded-3 p-3 border">
+                                    <div class="d-flex justify-content-between mb-2 small">
+                                        <span class="fw-medium">QTY: <span id="quickTotalQty">0</span></span>
+                                        <span class="fw-bold">Rs <span id="quickTotalAmount">0.00</span></span>
+                                    </div>
+                                    <button class="btn btn-success w-100 rounded-3" id="quickCreateOrderBtn" disabled>
+                                        <span class="btn-text"><i class="bi bi-lightning"></i> Quick Checkout</span>
+                                        <span class="spinner-border spinner-border-sm d-none"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Add Order Selection Modal --}}
+        <div class="modal fade" id="addOrderModal" tabindex="-1" aria-labelledby="addOrderModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius:14px;border:none;">
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <h5 class="modal-title mb-0 fw-bold" id="addOrderModalLabel"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Order</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Select Order Type</label>
+                            <div class="d-flex gap-2 mb-3">
+                                <button class="btn btn-outline-primary flex-fill order-type-btn active" data-type="dine_in">
+                                    <i class="bi bi-geo-alt me-1"></i> Dine In
+                                </button>
+                                <button class="btn btn-outline-primary flex-fill order-type-btn" data-type="takeaway">
+                                    <i class="bi bi-bag me-1"></i> Takeaway
+                                </button>
+                                <button class="btn btn-outline-primary flex-fill order-type-btn" data-type="delivery">
+                                    <i class="bi bi-truck me-1"></i> Delivery
+                                </button>
+                                <button class="btn btn-outline-primary flex-fill order-type-btn" data-type="quick_billing">
+                                    <i class="bi bi-lightning me-1"></i> Quick Billing
+                                </button>
+                            </div>
+                        </div>
+                        <div id="tableSelectionSection" class="mb-3">
+                            <label class="form-label fw-semibold">Select Table</label>
+                            <div class="row g-2" id="tableSelectionGrid">
+                                @foreach ($tables as $table)
+                                <div class="col-4 col-md-3">
+                                    <div class="table-select-card {{ $table->status == \App\Enums\TableStatusEnum::AVAILABLE ? 'available' : 'occupied' }}"
+                                         data-table-id="{{ $table->id }}"
+                                         data-table-name="{{ $table->name }}"
+                                         data-table-status="{{ $table->status }}"
+                                         onclick="selectTableForOrder(this)">
+                                        <div class="table-select-name">{{ $table->name }}</div>
+                                        <div class="table-select-status">{{ $table->status }}</div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div id="customerInfoSection" class="mb-3 d-none">
+                            <label class="form-label fw-semibold">Customer Information</label>
+                            <input type="text" class="form-control mb-2" placeholder="Customer Name" id="addOrderCustomerName">
+                            <input type="text" class="form-control mb-2" placeholder="Phone Number" id="addOrderCustomerPhone">
+                            <textarea class="form-control" placeholder="Delivery Address" id="addOrderDeliveryAddress" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top py-3 px-4">
+                        <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary rounded-3" id="proceedToItemsBtn" disabled onclick="proceedToItems()">
+                            <i class="bi bi-arrow-right me-1"></i> Proceed to Add Items
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Order Slip Print Modal --}}
+        <div class="modal fade" id="orderSlipModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 8px;">
+                    <div class="modal-header border-bottom py-2 px-3">
+                        <h5 class="modal-title mb-0" style="font-size: 14px; font-weight: 700;">Order Slip</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-3" style="font-family: monospace; font-size: 12px; background: white;">
+                        <div id="orderSlipContent"></div>
+                    </div>
+                    <div class="modal-footer border-top py-2 px-3">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+                            <i class="bi bi-printer me-1"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Checkout Modal --}}
+        <div class="modal fade" id="checkoutModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 1400px; width: 82vw;">
+                <div class="modal-content" style="border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; max-height: 95vh;">
+                    <div class="modal-header" style="background: white; border: 1px solid #e5e7eb; border-bottom: none; padding: 12px 16px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h5 class="modal-title mb-0" style="font-size: 16px; font-weight: 700; color: #1f2937;">Checkout</h5>
+                            <small style="font-size: 12px; color: #6b7280;" id="checkoutTableName">Table</small>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button type="button" class="btn btn-sm" onclick="window.print()" style="font-size: 11px; padding: 6px 12px; border: 1px solid #e5e7eb; background: white; border-radius: 2px; font-weight: 600;">Print</button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="margin-left: 4px; padding: 0; width: 24px; height: 24px;"></button>
+                        </div>
+                    </div>
+                    <div class="modal-body p-0" style="background: #f8f9fa; flex: 1; overflow: hidden; display: flex;">
+                        <div id="checkoutContent" style="flex: 0 0 70%; background: white; display: flex; flex-direction: column; overflow: hidden;">
+                            <div style="text-align: center; padding: 40px; color: #64748b;">
+                                <div style="font-size: 2rem; margin-bottom: 12px;">
+                                    <i class="bi bi-hourglass-split"></i>
+                                </div>
+                                <p style="font-size: 13px;">Loading checkout data...</p>
+                            </div>
+                        </div>
+                        <div id="estimateInvoicePanel" style="flex: 0 0 30%; background: white; border-left: 1px solid #e5e7eb; flex-shrink: 0; display: flex; flex-direction: column;">
+                            <div style="text-align: center; font-weight: 700; color: #1f2937; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; flex-shrink: 0;">ESTIMATE INVOICE</div>
+                            <div id="estimateInvoiceContent" style="flex: 1; overflow-y: auto; padding: 0 16px;">
+                                <div style="text-align: center; color: #6b7280; padding: 16px; font-size: 12px;">
+                                    Loading estimate...
+                                </div>
+                            </div>
+                            <div id="estimateInvoiceButtons" style="padding: 16px; border-top: 1px solid #e5e7eb; flex-shrink: 0; background: white;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Add Items Modal --}}
         <div class="modal fade" id="addItemsModal" tabindex="-1">
             <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -145,14 +361,14 @@
                                         @foreach ($dishes as $dish)
                                             <div class="col-6 col-lg-4 dish-card-wrap" data-menu-id="{{ $dish->menu_id }}">
                                                 <div class="dish-card-new">
-                                                    <img src="{{ $dish->image_url ?: 'https://via.placeholder.com/150x100?text=' . urlencode($dish->name) }}"
+                                                    <img src="{{ $dish->image_url ?: asset('assets/images/defaultfood.png') }}"
                                                          class="dish-img-new" alt="{{ $dish->name }}">
                                                     <div class="dish-info-new">
                                                         <h6 class="mb-1" style="font-size:.82rem;">{{ $dish->name }}</h6>
                                                         <p class="text-danger fw-bold mb-1" style="font-size:.85rem;">Rs {{ number_format($dish->final_price ?? $dish->price, 2) }}</p>
                                                         <p class="text-muted small mb-2" style="font-size:.72rem;">{{ Str::limit($dish->description, 40) }}</p>
                                                         <button class="btn btn-outline-danger btn-sm w-100 rounded-3"
-                                                                onclick="addToCart({{ $dish->id }}, '{{ $dish->name }}', {{ $dish->final_price ?? $dish->price }}, '{{ $dish->image_url }}')">
+                                                                onclick="addToCart({{ $dish->id }}, '{{ $dish->name }}', {{ $dish->final_price ?? $dish->price }}, '{{ $dish->image_url ?: asset('assets/images/defaultfood.png') }}')">
                                                             <i class="bi bi-cart-plus me-1"></i> Add
                                                         </button>
                                                     </div>
@@ -232,6 +448,326 @@
         .table-ov-name { font-size: 1rem; }
         .table-ov-status { font-size: .72rem; opacity: .8; text-transform: capitalize; }
 
+        .table-select-card {
+            padding: 1rem .5rem;
+            border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; font-weight: 600;
+            transition: all .15s;
+            border: 2px solid transparent;
+            text-align: center;
+        }
+        .table-select-card:hover { transform: scale(1.05); }
+        .table-select-card.available { background: #ecfdf5; color: #16a34a; border-color: #16a34a; }
+        .table-select-card.occupied { background: #fef2f2; color: #dc2626; border-color: #dc2626; opacity: 0.6; cursor: not-allowed; }
+        .table-select-card.selected { background: #dc2626; color: #fff; border-color: #dc2626; transform: scale(1.05); }
+        .table-select-name { font-size: .9rem; }
+        .table-select-status { font-size: .65rem; opacity: .8; text-transform: capitalize; }
+
+        .order-type-btn {
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all .15s;
+        }
+        .order-type-btn.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .order-type-btn:hover:not(.active) { background: #f1f5f9; }
+        body > .modal { z-index: 1080; }
+        body > .modal-backdrop { z-index: 1070; }
+
+        .payment-method, .payment-status {
+            padding: 6px 8px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .payment-method:hover, .payment-status:hover { background: #e5e7eb; }
+        .payment-method.active, .payment-status.active { background: #dc2626; color: white; border-color: #dc2626; }
+
+        .payment-method-compact, .payment-status-compact {
+            padding: 6px 12px;
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #374151;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-width: 60px;
+        }
+        .payment-method-compact:hover, .payment-status-compact:hover { background: #e5e7eb; }
+        .payment-method-compact.active, .payment-status-compact.active { background: #dc2626; color: white; border-color: #dc2626; }
+
+        /* Compact Order Card Styles */
+        .order-card-compact {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.15s;
+        }
+        .order-card-compact:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+            border-color: #d1d5db;
+        }
+
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .table-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .add-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.15s;
+        }
+        .add-btn:hover {
+            background: #2563eb;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .status-badge.available {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-badge.occupied {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .order-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .order-section {
+            padding: 8px 0;
+        }
+        .order-section.border-top {
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .order-id {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 6px;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .order-status-badge {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .order-status-badge.status-confirmed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .order-status-badge.status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .order-status-badge.status-cooking {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .order-status-badge.status-ready {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .order-status-badge.status-served {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .order-time {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .order-items {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .order-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #374151;
+        }
+        .order-item-row.more-items {
+            padding-top: 2px;
+        }
+
+        .item-name {
+            font-weight: 500;
+        }
+
+        .item-qty {
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 6px;
+            border-top: 1px solid #f3f4f6;
+            margin-bottom: 8px;
+        }
+
+        .items-count {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .order-total {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .order-actions-compact {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn-add {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn-add:hover {
+            background: #2563eb;
+        }
+
+        .action-btn-print {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn-print:hover {
+            background: #4b5563;
+        }
+
+        .action-btn-cancel {
+            flex: 1;
+            padding: 8px 12px;
+            background: white;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn-cancel:hover {
+            background: #fee2e2;
+        }
+
+        .action-btn-checkout {
+            flex: 1;
+            padding: 8px 12px;
+            background: #059669;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn-checkout:hover {
+            background: #047857;
+        }
+
+        .size-badge {
+            padding: 4px 8px;
+            border-radius: 2px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .size-badge.half {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .size-badge.full {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
         .dish-card-wrap { padding: 0; }
         .dish-card-new {
             border: 1px solid #e2e8f0;
@@ -261,19 +797,20 @@
         .cart-item-details { min-width:0; }
         .cart-item-name { font-size: .78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cart-item-price { font-size: .7rem; color: #64748b; }
-        .size-controls { display: flex; align-items: center; gap: 2px; flex-shrink:0; }
-        .size-btn, .qty-btn {
-            width: 22px; height: 22px; border: 1px solid #e2e8f0;
-            background: #f8fafc; border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: .7rem; color: #475569;
-            transition: all .1s; padding: 0; line-height: 1;
+        .size-selector { display: flex; align-items: center; gap: 2px; flex-shrink:0; }
+        .size-option-btn {
+            padding: 8px 4px; border: 1px solid #e2e8f0;
+            background: #f8fafc; border-radius: 2px;
+            cursor: pointer; font-size: .65rem; color: #475569;
+            transition: all .1s; font-weight: 600;
+            min-width: 35px;
         }
-        .size-btn:hover, .qty-btn:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
-        .size-btn:disabled { opacity: .3; cursor: not-allowed; }
-        .size-btn:disabled:hover { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
-        .size-display { font-size: .7rem; font-weight: 600; min-width: 28px; text-align: center; color: #475569; }
-        .qty-display { font-size: .78rem; font-weight: 700; min-width: 24px; text-align: center; }
+        .size-option-btn:hover { background: #e2e8f0; }
+        .size-option-btn.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .qty-ctrl { display: inline-flex; align-items: center; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+        .qty-ctrl button { border: none; background: #f8fafc; width: 24px; height: 24px; font-size: .8rem; cursor: pointer; transition: all .1s; }
+        .qty-ctrl button:hover { background: #dc2626; color: #fff; }
+        .qty-ctrl span { padding: 0 .5rem; font-size: .8rem; font-weight: 600; min-width: 24px; text-align: center; background: #fff; }
         .remove-item-btn {
             background: none; border: none; color: #94a3b8; cursor: pointer;
             padding: 2px; transition: color .1s; margin-left: 2px;
@@ -451,6 +988,53 @@
         }
         .order-card-slim:hover { box-shadow: 0 4px 12px rgba(0,0,0,.04); }
 
+        .order-card-link {
+            display: block;
+            text-decoration: none;
+        }
+
+        .order-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .order-action-btn.primary { background: #3b82f6; color: #fff; }
+        .order-action-btn.primary:hover { background: #2563eb; }
+        .order-action-btn.success { background: #22c55e; color: #fff; }
+        .order-action-btn.success:hover { background: #16a34a; }
+        .order-action-btn.danger { background: #ef4444; color: #fff; }
+        .order-action-btn.danger:hover { background: #dc2626; }
+        .order-action-btn.muted { background: #64748b; color: #fff; }
+        .order-action-btn.muted:hover { background: #475569; }
+        .order-action-btn.xs { padding: 4px 8px; font-size: 0.75rem; }
+
+        .order-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .card-footer-actions {
+            margin-top: 12px;
+        }
+
+        .dash-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
         .kot-card-new {
             border: 1px solid #e2e8f0; border-radius: 10px; background: #fff;
             overflow: hidden; transition: box-shadow .15s;
@@ -485,9 +1069,51 @@
 
 @push('scripts')
 <script>
+    // Cart State
     let cart = [];
-    let currentTable = { id: null, name: '' };
+    let currentTable = null;
     let isOrderCreating = false;
+    let currentOrderId = null;
+
+    // Poll for notifications
+    function pollNotifications() {
+        fetch('/admin/notifications')
+            .then(r => r.json())
+            .then(d => {
+                if (d.unread_count > 0) {
+                    showNotificationBadge(d.unread_count);
+                }
+            });
+    }
+
+    function showNotificationBadge(count) {
+        let badge = document.getElementById('notificationBadge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.id = 'notificationBadge';
+            badge.className = 'badge bg-danger ms-2';
+            badge.style.position = 'fixed';
+            badge.style.top = '20px';
+            badge.style.right = '20px';
+            badge.style.zIndex = '9999';
+            badge.style.cursor = 'pointer';
+            badge.onclick = () => {
+                fetch('/admin/notifications/read-all', { method: 'PUT' });
+                badge.remove();
+            };
+            document.body.appendChild(badge);
+        }
+        badge.textContent = count + ' New QR Order' + (count > 1 ? 's' : '');
+    }
+
+    // Poll every 10 seconds
+    setInterval(pollNotifications, 10000);
+
+    // Track existing order ID for adding items
+    let quickCart = [];
+    let isQuickOrderCreating = false;
+    let selectedOrderType = 'dine_in';
+    let selectedTableForOrder = null;
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -499,17 +1125,631 @@
         });
     });
 
+    document.querySelectorAll('#page-content .modal').forEach((modal) => {
+        document.body.appendChild(modal);
+    });
+
+    function getModal(id) {
+        const el = document.getElementById(id);
+        if (!el || typeof bootstrap === 'undefined') {
+            return null;
+        }
+        return bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    function openQuickBilling() {
+        quickCart = [];
+        updateQuickCartDisplay();
+        getModal('quickBillingModal')?.show();
+    }
+
+    function resetAddOrderModal() {
+        selectedOrderType = 'dine_in';
+        selectedTableForOrder = null;
+        document.querySelectorAll('.order-type-btn').forEach(btn => btn.classList.remove('active'));
+        const dineInBtn = document.querySelector('.order-type-btn[data-type="dine_in"]');
+        if (dineInBtn) {
+            dineInBtn.classList.add('active');
+        }
+        document.querySelectorAll('.table-select-card').forEach(card => card.classList.remove('selected'));
+        document.getElementById('tableSelectionSection')?.classList.remove('d-none');
+        document.getElementById('customerInfoSection')?.classList.add('d-none');
+        const proceedBtn = document.getElementById('proceedToItemsBtn');
+        if (proceedBtn) {
+            proceedBtn.disabled = true;
+        }
+    }
+
+    function openAddOrderModal() {
+        const modalEl = document.getElementById('addOrderModal');
+        if (!modalEl) {
+            return;
+        }
+        document.body.appendChild(modalEl);
+        resetAddOrderModal();
+        getModal('addOrderModal')?.show();
+    }
+
+    document.getElementById('addOrderModal')?.addEventListener('show.bs.modal', function() {
+        resetAddOrderModal();
+    });
+
+    document.querySelectorAll('.order-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.order-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedOrderType = btn.dataset.type;
+            selectedTableForOrder = null;
+            document.querySelectorAll('.table-select-card').forEach(card => card.classList.remove('selected'));
+
+            if (selectedOrderType === 'dine_in') {
+                document.getElementById('tableSelectionSection').classList.remove('d-none');
+                document.getElementById('customerInfoSection').classList.add('d-none');
+            } else if (selectedOrderType === 'quick_billing') {
+                document.getElementById('tableSelectionSection').classList.add('d-none');
+                document.getElementById('customerInfoSection').classList.remove('d-none');
+                document.getElementById('proceedToItemsBtn').disabled = false;
+            } else {
+                document.getElementById('tableSelectionSection').classList.add('d-none');
+                document.getElementById('customerInfoSection').classList.remove('d-none');
+                document.getElementById('proceedToItemsBtn').disabled = false;
+            }
+        });
+    });
+
+    function selectTableForOrder(card) {
+        const status = card.dataset.tableStatus;
+        if (status !== 'available') return;
+
+        document.querySelectorAll('.table-select-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedTableForOrder = {
+            id: parseInt(card.dataset.tableId),
+            name: card.dataset.tableName
+        };
+        document.getElementById('proceedToItemsBtn').disabled = false;
+    }
+
+    function proceedToItems() {
+        getModal('addOrderModal')?.hide();
+
+        if (selectedOrderType === 'dine_in' && selectedTableForOrder) {
+            currentTable = selectedTableForOrder;
+            document.getElementById('selectedTableName').textContent = selectedTableForOrder.name;
+            cart = [];
+            updateCartDisplay();
+            getModal('addItemsModal')?.show();
+        } else if (selectedOrderType === 'quick_billing') {
+            quickCart = [];
+            updateQuickCartDisplay();
+            document.getElementById('quickCustomerName').value = document.getElementById('addOrderCustomerName').value;
+            const quickPhone = document.getElementById('quickCustomerPhone');
+            if (quickPhone) {
+                quickPhone.value = document.getElementById('addOrderCustomerPhone').value;
+            }
+            document.getElementById('quickOrderNotes').value = document.getElementById('addOrderDeliveryAddress').value;
+            getModal('quickBillingModal')?.show();
+        } else {
+            quickCart = [];
+            updateQuickCartDisplay();
+            document.getElementById('quickCustomerName').value = document.getElementById('addOrderCustomerName').value;
+            const quickPhone = document.getElementById('quickCustomerPhone');
+            if (quickPhone) {
+                quickPhone.value = document.getElementById('addOrderCustomerPhone').value;
+            }
+            document.getElementById('quickOrderNotes').value = document.getElementById('addOrderDeliveryAddress').value;
+            getModal('quickBillingModal')?.show();
+        }
+    }
+
     function handleTableClick(name, id, status) {
         if (status === 'occupied') {
-            window.location.href = `/admin/orders/table/${id}/edit`;
+            openCheckoutModal(id, name);
         } else {
             currentTable = { id, name };
             document.getElementById('selectedTableName').textContent = name;
             cart = [];
             updateCartDisplay();
-            new bootstrap.Modal(document.getElementById('addItemsModal')).show();
+            getModal('addItemsModal')?.show();
         }
     }
+
+    function openAddItemsModal(tableId, tableName, orderId = null) {
+        currentTable = { id: tableId, name: tableName };
+        currentOrderId = orderId; // Track existing order ID
+        document.getElementById('selectedTableName').textContent = tableName;
+        cart = [];
+        updateCartDisplay();
+        getModal('addItemsModal')?.show();
+    }
+
+    async function printOrderSlip(orderId, tableName) {
+        try {
+            const response = await fetch(`/admin/orders/${orderId}/checkout-data`);
+            const result = await response.json();
+
+            if (result.success) {
+                const data = result.data;
+                const order = data.order;
+                const items = data.items;
+                const table = data.table;
+
+                const slipContent = `
+                    <div style="text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 14px;">Order Slip</div>
+                    <div style="margin-bottom: 5px;">Type: ${order.order_type || 'Dine In'} Service</div>
+                    <div style="margin-bottom: 5px;">ORD No: ${order.id}</div>
+                    <div style="margin-bottom: 5px;">Table: ${table.name || 'N/A'}</div>
+                    <div style="margin-bottom: 5px;">Status: ${order.status}</div>
+                    <div style="margin-bottom: 10px;">Order At: ${new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                    <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold;">
+                        <span>S.N</span><span>Dishes</span><span>QTY</span><span>Price</span>
+                    </div>
+                    ${items.map((item, index) => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span>${index + 1}.</span>
+                            <span>${item.name}</span>
+                            <span>${item.quantity}</span>
+                            <span>${parseFloat(item.unit_price * item.quantity).toFixed(0)}</span>
+                        </div>
+                    `).join('')}
+                    <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold;">
+                        <span>Total Amount</span><span>Rs ${parseFloat(data.total_amount).toFixed(0)}</span>
+                    </div>
+                    <div style="margin-bottom: 5px;">KOT NO: ${order.id}</div>
+                    <div style="margin-bottom: 5px;">Printed By: ${data.order?.waiter?.name || 'Staff'}</div>
+                    <div style="margin-bottom: 10px;">Printed At: ${new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                    <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                    <div style="text-align: center; margin-top: 10px; font-weight: bold;">Thank You!</div>
+                `;
+
+                document.getElementById('orderSlipContent').innerHTML = slipContent;
+                getModal('orderSlipModal')?.show();
+            } else {
+                alert('Failed to load order data');
+            }
+        } catch (error) {
+            console.error('Error loading order slip:', error);
+            alert('Error loading order slip');
+        }
+    }
+
+    function openCheckoutModal(tableId, tableName, orderId = null) {
+        currentTable = { id: tableId, name: tableName };
+        document.getElementById('checkoutTableName').textContent = tableName;
+        loadCheckoutData(tableId, orderId);
+        getModal('checkoutModal')?.show();
+    }
+
+    function loadCheckoutData(tableId, orderId = null) {
+        const contentDiv = document.getElementById('checkoutContent');
+        const estimateDiv = document.getElementById('estimateInvoiceContent');
+
+        contentDiv.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #64748b;">
+                <div style="font-size: 3rem; margin-bottom: 16px;">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <p style="font-size: 1.1rem;">Loading checkout data...</p>
+            </div>
+        `;
+
+        const url = orderId ? `/admin/orders/${orderId}/checkout-data` : `/admin/orders/table/${tableId}/checkout-data`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    renderCheckoutContent(data.data);
+                } else {
+                    contentDiv.innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px; color: #dc2626;">
+                            <div style="font-size: 3rem; margin-bottom: 16px;">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <p style="font-size: 1.1rem;">${data.message || 'Failed to load checkout data'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading checkout data:', error);
+                contentDiv.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #dc2626;">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <p style="font-size: 1.1rem;">Network error occurred</p>
+                    </div>
+                `;
+            });
+    }
+
+    function renderCheckoutContent(data) {
+        const contentDiv = document.getElementById('checkoutContent');
+        const estimateDiv = document.getElementById('estimateInvoiceContent');
+        const items = data.items || [];
+        const table = data.table || {};
+        const order = data.order || {};
+
+        let itemsHtml = items.map((item, index) => {
+            const sizeLabel = item.size === 0.5 ? 'Half' : item.size === 1 ? 'Full' : '';
+            return `
+                <tr data-item-key="${item.menu_item_id}-${item.size}" data-base-price="${item.unit_price}" data-quantity="${item.quantity}">
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>
+                        <span class="size-badge ${item.size === 0.5 ? 'half' : item.size === 1 ? 'full' : ''}">${sizeLabel}</span>
+                    </td>
+                    <td>${item.quantity}</td>
+                    <td class="item-rate">Rs ${parseFloat(item.unit_price).toFixed(2)}</td>
+                    <td>0.00</td>
+                    <td class="item-total">Rs ${parseFloat(item.unit_price * item.quantity).toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm" style="padding: 2px 6px; font-size: 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 2px;" onclick="deleteCheckoutItem('${item.menu_item_id}-${item.size}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+
+        if (items.length === 0) {
+            itemsHtml = '<tr><td colspan="8" style="text-align:center;padding:20px;">No items</td></tr>';
+        }
+
+        const grandTotal = parseFloat(data.total_amount || 0).toFixed(2);
+
+        contentDiv.innerHTML = `
+            <div id="checkoutScrollableContent" style="flex: 1; overflow-y: auto; padding: 12px;">
+                <!-- Order Information -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span style="background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 2px; font-size: 11px; font-weight: 600;">${table.name || 'Table'}</span>
+                        <span style="background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 2px; font-size: 11px; font-weight: 600;">${order.order_type || 'Dine In'}</span>
+                    </div>
+                    <span style="font-size: 11px; color: #6b7280;">${new Date().toLocaleString()}</span>
+                </div>
+
+                <!-- Order Items -->
+                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px; margin-bottom: 12px; max-height: 300px; overflow-y: auto;">
+                    <h6 style="font-weight: 700; margin-bottom: 8px; color: #1f2937; font-size: 13px;">Order Items</h6>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f9fafb;">
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">S.N</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Item</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Size</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">QTY</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Rate</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Discount</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Item Total</th>
+                                <th style="padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Customer + Totals -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <!-- Customer -->
+                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px;">
+                        <h6 style="font-weight: 700; margin-bottom: 8px; color: #1f2937; font-size: 13px;">Customer</h6>
+                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                            <input type="text" style="flex: 1; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 12px;" placeholder="Search or select customer...">
+                            <button style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 2px; font-size: 12px; font-weight: 600;">+</button>
+                        </div>
+                        <textarea style="width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 2px; resize: vertical; font-size: 12px;" rows="2" placeholder="Remarks"></textarea>
+                    </div>
+
+                    <!-- Totals -->
+                    <div style="background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px;">
+                        <h6 style="font-weight: 700; margin-bottom: 8px; color: #1f2937; font-size: 13px;">Totals</h6>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6b7280;">
+                            <span>Item Total</span>
+                            <span>Rs ${parseFloat(data.subtotal || 0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6b7280;">
+                            <span>Service Charge</span>
+                            <span>Rs ${parseFloat(data.service_charge || 0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6b7280;">
+                            <span>VAT (${data.vat_percent || 0}%)</span>
+                            <span>Rs ${parseFloat(data.vat_amount || 0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-weight: 700; font-size: 13px; color: #1f2937;">
+                            <span>Grand Total</span>
+                            <span style="color: #059669;">Rs ${grandTotal}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div style="background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px;">
+                    <h6 style="font-weight: 700; margin-bottom: 10px; color: #1f2937; font-size: 13px;">Payment</h6>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div>
+                            <label style="font-size: 10px; color: #6b7280; margin-bottom: 4px; display: block; font-weight: 600;">Payment Method</label>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button class="payment-method-compact active" onclick="selectPaymentMethod(this, 'cash')">Cash</button>
+                                <button class="payment-method-compact" onclick="selectPaymentMethod(this, 'card')">Card</button>
+                                <button class="payment-method-compact" onclick="selectPaymentMethod(this, 'esewa')">eSewa</button>
+                                <button class="payment-method-compact" onclick="selectPaymentMethod(this, 'khalti')">Khalti</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 10px; color: #6b7280; margin-bottom: 4px; display: block; font-weight: 600;">Payment Status</label>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button class="payment-status-compact active" onclick="selectPaymentStatus(this, 'paid')">Paid</button>
+                                <button class="payment-status-compact" onclick="selectPaymentStatus(this, 'partial')">Partial</button>
+                                <button class="payment-status-compact" onclick="selectPaymentStatus(this, 'unpaid')">Unpaid</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="checkoutStickyFooter" style="flex-shrink: 0; padding: 12px; border-top: 1px solid #e5e7eb; background: white;">
+                <div style="display: flex; gap: 12px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: #6b7280; margin-bottom: 6px; display: block; font-weight: 600;">Tender Amount</label>
+                        <input type="number" id="tenderAmount" style="width: 100%; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 18px; font-weight: 700; color: #1f2937;" placeholder="0.00" value="${grandTotal}">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: #6b7280; margin-bottom: 6px; display: block; font-weight: 600;">Change Due</label>
+                        <input type="text" id="changeDue" style="width: 100%; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 18px; font-weight: 700; color: #1f2937; background: #f9fafb;" placeholder="0.00" readonly value="0.00">
+                    </div>
+                </div>
+            </div>
+        `;
+
+        estimateDiv.innerHTML = `
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Invoice No: ##</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Date: ${new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">${data.order?.order_type || 'Dine In'}: ${table.name || 'N/A'}</div>
+            <div style="margin-bottom: 12px; font-size: 11px; color: #6b7280;">Customer: Cash Customer</div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                        <th style="text-align: left; padding: 4px; color: #374151;">Particular</th>
+                        <th style="text-align: right; padding: 4px; color: #374151;">Rate</th>
+                        <th style="text-align: right; padding: 4px; color: #374151;">QTY</th>
+                        <th style="text-align: right; padding: 4px; color: #374151;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map(item => `
+                        <tr style="border-bottom: 1px solid #f3f4f6;">
+                            <td style="padding: 4px; color: #374151;">${item.name}</td>
+                            <td style="padding: 4px; text-align: right; color: #374151;">${parseFloat(item.unit_price).toFixed(0)}</td>
+                            <td style="padding: 4px; text-align: right; color: #374151;">${item.quantity}</td>
+                            <td style="padding: 4px; text-align: right; color: #374151;">${(item.unit_price * item.quantity).toFixed(0)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Total (Particular/QTY) ${items.length}/${items.reduce((sum, item) => sum + item.quantity, 0)}</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Rs ${parseFloat(grandTotal).toFixed(0)}</div>
+            <div style="margin-bottom: 12px; font-size: 11px; color: #6b7280; font-style: italic;">${numberToWords(Math.round(grandTotal))} Nepalese Rupee Only</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Payment Mode: Unpaid (Rs ${parseFloat(grandTotal).toFixed(0)})</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">KOT No: ${data.order?.id || '##'} (by ${data.order?.waiter?.name || 'Staff'})</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Billed By: ${data.order?.waiter?.name || 'Staff'}</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Service Duration: --</div>
+            <div style="margin-bottom: 12px; font-size: 10px; color: #dc2626; font-weight: 600; text-align: center;">This is not a Tax Invoice!</div>
+            <div style="margin-bottom: 8px; font-size: 10px; color: #6b7280; text-align: center;">Kindly accept the original bill from the counter.</div>
+            <div style="margin-bottom: 8px; font-size: 11px; color: #1f2937; text-align: center; font-weight: 600;">Thank You</div>
+            <div style="margin-bottom: 12px; font-size: 10px; color: #6b7280; text-align: center;">Thank you for your visit! Visit again</div>
+        `;
+
+        const buttonsDiv = document.getElementById('estimateInvoiceButtons');
+        buttonsDiv.innerHTML = `
+            <div style="margin-bottom: 12px; padding: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;">
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 4px;">Net sales amount</div>
+                <div style="font-size: 18px; font-weight: 700; color: #1f2937;">${parseFloat(grandTotal).toFixed(0)}</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="confirmAndPrint()" style="flex: 1; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                    Confirm & Print
+                </button>
+                <button onclick="completeCheckout()" style="flex: 1; padding: 10px; background: #059669; color: white; border: none; border-radius: 4px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                    Confirm Checkout
+                </button>
+            </div>
+        `;
+    }
+
+    function deleteCheckoutItem(itemKey) {
+        if (confirm('Delete this item?')) {
+            const row = document.querySelector(`tr[data-item-key="${itemKey}"]`);
+            if (row) {
+                row.remove();
+                recalculateTotals();
+            }
+        }
+    }
+
+    function recalculateTotals() {
+        const rows = document.querySelectorAll('#checkoutContent tbody tr');
+        let itemTotal = 0;
+
+        rows.forEach(row => {
+            const totalCell = row.querySelector('.item-total');
+            if (totalCell) {
+                const total = parseFloat(totalCell.textContent.replace('Rs ', '')) || 0;
+                itemTotal += total;
+            }
+        });
+
+        // Update totals display
+        const grandTotal = itemTotal;
+        document.querySelector('#checkoutContent [style*="color: #059669"]').textContent = 'Rs ' + grandTotal.toFixed(2);
+
+        // Update tender amount if paid
+        if (selectedPaymentStatus === 'paid') {
+            document.getElementById('tenderAmount').value = grandTotal.toFixed(2);
+        }
+
+        // Update change due
+        calculateChangeDue();
+    }
+
+    function calculateChangeDue() {
+        const tenderAmount = parseFloat(document.getElementById('tenderAmount').value) || 0;
+        const grandTotal = parseFloat(document.querySelector('#checkoutContent [style*="color: #059669"]').textContent.replace('Rs ', '')) || 0;
+        const changeDue = Math.max(0, tenderAmount - grandTotal);
+        document.getElementById('changeDue').value = changeDue.toFixed(2);
+    }
+
+    function getNepaliDate() {
+        const today = new Date();
+        const nepaliMonths = ['Baishakh', 'Jestha', 'Ashadh', 'Shrawan', 'Bhadra', 'Ashwin', 'Kartik', 'Mangsir', 'Poush', 'Magh', 'Falgun', 'Chaitra'];
+        // Simple approximation - in production, use a proper Nepali date library
+        const year = today.getFullYear() - 56;
+        const month = today.getMonth();
+        const day = today.getDate();
+        return `${day} ${nepaliMonths[month]}, ${year}`;
+    }
+
+    function numberToWords(num) {
+        const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        if (num === 0) return 'Zero';
+
+        function convertHundreds(n) {
+            let word = '';
+            if (n >= 100) {
+                word += ones[Math.floor(n / 100)] + ' Hundred ';
+                n %= 100;
+            }
+            if (n > 0) {
+                if (n < 20) {
+                    word += ones[n] + ' ';
+                } else {
+                    word += tens[Math.floor(n / 10)] + ' ';
+                    if (n % 10 > 0) {
+                        word += ones[n % 10] + ' ';
+                    }
+                }
+            }
+            return word;
+        }
+
+        let word = '';
+        if (num >= 10000000) {
+            word += convertHundreds(Math.floor(num / 10000000)) + 'Crore ';
+            num %= 10000000;
+        }
+        if (num >= 100000) {
+            word += convertHundreds(Math.floor(num / 100000)) + 'Lakh ';
+            num %= 100000;
+        }
+        if (num >= 1000) {
+            word += convertHundreds(Math.floor(num / 1000)) + 'Thousand ';
+            num %= 1000;
+        }
+        if (num >= 100) {
+            word += convertHundreds(Math.floor(num / 100)) + 'Hundred ';
+            num %= 100;
+        }
+        if (num > 0) {
+            word += convertHundreds(num);
+        }
+
+        return word.trim();
+    }
+
+    function confirmAndPrint() {
+        const tenderAmount = parseFloat(document.getElementById('tenderAmount').value) || 0;
+        const totalAmount = parseFloat(document.querySelector('#checkoutContent [style*="color: #059669"]').textContent.replace('Rs ', '')) || 0;
+        if (tenderAmount < totalAmount && selectedPaymentStatus === 'paid') {
+            alert('Amount received cannot be less than total amount');
+            return;
+        }
+        // Print the estimate invoice
+        window.print();
+    }
+
+    function printEstimate() {
+        window.print();
+    }
+
+    let selectedPaymentMethod = 'cash';
+    let selectedPaymentStatus = 'paid';
+
+    function selectPaymentMethod(btn, method) {
+        document.querySelectorAll('.payment-method-compact').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPaymentMethod = method;
+    }
+
+    function selectPaymentStatus(btn, status) {
+        document.querySelectorAll('.payment-status-compact').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPaymentStatus = status;
+
+        // Auto-fill tender amount when paid is selected
+        if (status === 'paid') {
+            const grandTotal = parseFloat(document.querySelector('#checkoutContent [style*="color: #059669"]').textContent.replace('Rs ', '')) || 0;
+            document.getElementById('tenderAmount').value = grandTotal.toFixed(2);
+            calculateChangeDue();
+        }
+    }
+
+    async function completeCheckout() {
+        const tenderAmount = parseFloat(document.getElementById('tenderAmount').value) || 0;
+        const totalAmount = parseFloat(document.querySelector('#checkoutContent [style*="color: #059669"]').textContent.replace('Rs ', '')) || 0;
+        if (tenderAmount < totalAmount && selectedPaymentStatus === 'paid') {
+            alert('Amount received cannot be less than total amount');
+            return;
+        }
+        try {
+            const response = await fetch(`/admin/orders/table/${currentTable.id}/checkout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                body: JSON.stringify({
+                    payment_method: selectedPaymentMethod,
+                    tender_amount: tenderAmount,
+                    total_amount: totalAmount,
+                    subtotal: 0,
+                    service_charge_amount: 0,
+                    vat_percent: 0,
+                    vat_amount: 0,
+                }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('Checkout completed successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
+                location.reload();
+            } else {
+                alert(data.message || 'Checkout failed');
+            }
+        } catch (error) {
+            alert('Network error occurred');
+        }
+    }
+
+    // Add tender amount input listener
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'tenderAmount') {
+            calculateChangeDue();
+        }
+    });
 
     document.querySelectorAll('.menu-categories button').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -531,6 +1771,145 @@
             const desc = d.querySelector('.text-muted').textContent.toLowerCase();
             d.style.display = (name.includes(q) || desc.includes(q)) ? '' : 'none';
         });
+    });
+
+    // Quick Billing Modal Functions
+    document.querySelectorAll('#quickMenuCategories button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('#quickMenuCategories button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const menuId = btn.dataset.menuId;
+            document.querySelectorAll('#quickDishesContainer .dish-card-wrap').forEach(d => {
+                d.style.display = (menuId === 'all' || d.dataset.menuId === menuId) ? '' : 'none';
+            });
+            document.getElementById('quickMenuTitle').textContent = btn.textContent.split('\n')[0].trim();
+        });
+    });
+
+    document.getElementById('quickDishSearch').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('#quickDishesContainer .dish-card-wrap').forEach(d => {
+            const name = d.querySelector('h6').textContent.toLowerCase();
+            const desc = d.querySelector('.text-muted').textContent.toLowerCase();
+            d.style.display = (name.includes(q) || desc.includes(q)) ? '' : 'none';
+        });
+    });
+
+    function addToQuickCart(id, name, price, image) {
+        const defaultImage = '/assets/images/defaultfood.png';
+        const validImage = (image && image !== 'null' && image !== '') ? image : defaultImage;
+        const existing = quickCart.find(i => i.id === id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            quickCart.push({ id, name, price, image: validImage, quantity: 1, size: 1, basePrice: price });
+        }
+        updateQuickCartDisplay();
+    }
+
+    function updateQuickCartDisplay() {
+        const cc = document.getElementById('quickCartItems');
+        const cb = document.getElementById('clearQuickCartBtn');
+        const co = document.getElementById('quickCreateOrderBtn');
+        const tq = document.getElementById('quickTotalQty');
+        const ta = document.getElementById('quickTotalAmount');
+        if (!quickCart.length) {
+            cc.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-cart-x" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i><small>No items added</small></div>';
+            cb.style.display = 'none';
+            if (co) { co.disabled = true; }
+            tq.textContent = '0';
+            ta.textContent = '0.00';
+            return;
+        }
+        cb.style.display = 'block';
+        if (co) co.disabled = isQuickOrderCreating;
+        let html = '', totQ = 0, totA = 0;
+        const defaultImage = '/assets/images/defaultfood.png';
+        quickCart.forEach((item, i) => {
+            const it = item.price * item.quantity;
+            totQ += item.quantity;
+            totA += it;
+            const itemImage = (item.image && item.image !== 'null' && item.image !== '') ? item.image : defaultImage;
+            html += `<div class="cart-item">
+                <div class="cart-item-left">
+                    <img src="${itemImage}" alt="${item.name}" class="cart-item-image">
+                    <div class="cart-item-details">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-price">Rs ${item.price.toFixed(0)}</div>
+                    </div>
+                </div>
+                <div class="size-selector">
+                    <button class="size-option-btn ${item.size === 0.5 ? 'active' : ''}" onclick="setQuickItemSize(${i}, 0.5)">Half</button>
+                    <button class="size-option-btn ${item.size === 1 ? 'active' : ''}" onclick="setQuickItemSize(${i}, 1)">Full</button>
+                </div>
+                <div class="qty-ctrl">
+                    <button onclick="updateQuickQuantity(${i},-1)">−</button>
+                    <span>${item.quantity}</span>
+                    <button onclick="updateQuickQuantity(${i},1)">+</button>
+                </div>
+                <button class="remove-item-btn" onclick="removeQuickItem(${i})"><i class="bi bi-x"></i></button>
+            </div>`;
+        });
+        cc.innerHTML = html;
+        tq.textContent = totQ;
+        ta.textContent = totA.toFixed(0);
+    }
+
+    function setQuickItemSize(index, size) {
+        if (!quickCart[index]) return;
+        quickCart[index].size = size;
+        quickCart[index].price = quickCart[index].basePrice * size;
+        updateQuickCartDisplay();
+    }
+
+    function updateQuickQuantity(index, change) {
+        if (!quickCart[index]) return;
+        quickCart[index].quantity += change;
+        if (quickCart[index].quantity <= 0) quickCart.splice(index, 1);
+        updateQuickCartDisplay();
+    }
+
+    function removeQuickItem(index) { quickCart.splice(index, 1); updateQuickCartDisplay(); }
+
+    document.getElementById('clearQuickCartBtn').addEventListener('click', () => {
+        if (confirm('Clear all items?')) { quickCart = []; updateQuickCartDisplay(); }
+    });
+
+    document.getElementById('quickCreateOrderBtn').addEventListener('click', async () => {
+        if (!quickCart.length || isQuickOrderCreating) return;
+        isQuickOrderCreating = true;
+        const btn = document.getElementById('quickCreateOrderBtn');
+        btn.disabled = true;
+        btn.querySelector('.spinner-border').classList.remove('d-none');
+        btn.querySelector('.btn-text').classList.add('d-none');
+        try {
+            const r = await fetch('/admin/orders/quick-billing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                body: JSON.stringify({
+                    waiter_id: document.getElementById('quickWaiterSelect').value || null,
+                    customer_name: document.getElementById('quickCustomerName').value || null,
+                    no_of_guests: document.getElementById('quickGuestCount').value || null,
+                    notes: document.getElementById('quickOrderNotes').value,
+                    items: quickCart.map(item => ({ menu_item_id: item.id, quantity: item.quantity, unit_price: item.price, size: item.size }))
+                })
+            });
+            const d = await r.json();
+            if (d.success) {
+                showToast('success', 'Quick order created');
+                quickCart = []; updateQuickCartDisplay();
+                bootstrap.Modal.getInstance(document.getElementById('quickBillingModal')).hide();
+                loadRecentOrders();
+                setTimeout(() => location.reload(), 800);
+            } else { showToast('error', d.message); }
+        } catch (e) { showToast('error', 'Failed to create quick order'); }
+        finally {
+            isQuickOrderCreating = false;
+            btn.disabled = false;
+            btn.querySelector('.spinner-border').classList.add('d-none');
+            btn.querySelector('.btn-text').classList.remove('d-none');
+        }
     });
 
     function updateItemSize(index, change) {
@@ -560,23 +1939,23 @@
         cb.style.display = 'block';
         if (co) co.disabled = isOrderCreating;
         let html = '', totQ = 0, totA = 0;
+        const defaultImage = '/assets/images/defaultfood.png';
         cart.forEach((item, i) => {
             const it = item.price * item.quantity;
             totQ += item.quantity;
             totA += it;
-            const sl = item.size === .5 ? 'Half' : item.size === 1 ? 'Full' : '';
+            const itemImage = (item.image && item.image !== 'null' && item.image !== '') ? item.image : defaultImage;
             html += `<div class="cart-item">
                 <div class="cart-item-left">
-                    <img src="${item.image}" alt="${item.name}" class="cart-item-image">
+                    <img src="${itemImage}" alt="${item.name}" class="cart-item-image">
                     <div class="cart-item-details">
                         <div class="cart-item-name">${item.name}</div>
                         <div class="cart-item-price">Rs ${item.price.toFixed(0)}</div>
                     </div>
                 </div>
-                <div class="size-controls">
-                    <button class="size-btn" onclick="updateItemSize(${i},-0.5)" ${item.size<=.5?'disabled':''}><i class="bi bi-dash"></i></button>
-                    <span class="size-display">${sl}</span>
-                    <button class="size-btn" onclick="updateItemSize(${i},0.5)" ${item.size>=1?'disabled':''}><i class="bi bi-plus"></i></button>
+                <div class="size-selector">
+                    <button class="size-option-btn ${item.size === 0.5 ? 'active' : ''}" onclick="setItemSize(${i}, 0.5)">Half</button>
+                    <button class="size-option-btn ${item.size === 1 ? 'active' : ''}" onclick="setItemSize(${i}, 1)">Full</button>
                 </div>
                 <div class="qty-ctrl">
                     <button onclick="updateQuantity(${i},-1)">−</button>
@@ -589,6 +1968,13 @@
         cc.innerHTML = html;
         tq.textContent = totQ;
         ta.textContent = totA.toFixed(0);
+    }
+
+    function setItemSize(index, size) {
+        if (!cart[index]) return;
+        cart[index].size = size;
+        cart[index].price = cart[index].basePrice * size;
+        updateCartDisplay();
     }
 
     function updateQuantity(index, change) {
@@ -612,8 +1998,10 @@
         btn.querySelector('.spinner-border').classList.remove('d-none');
         btn.querySelector('.btn-text').classList.add('d-none');
         try {
-            const r = await fetch('/admin/orders', {
-                method: 'POST',
+            // Check if adding to existing order
+            const url = currentOrderId ? `/admin/orders/${currentOrderId}/add-items` : '/admin/orders';
+            const r = await fetch(url, {
+                method: currentOrderId ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
                 body: JSON.stringify({
                     table_id: currentTable.id,
@@ -625,10 +2013,12 @@
             });
             const d = await r.json();
             if (d.success) {
-                showToast('success', 'Order created');
+                showToast('success', currentOrderId ? 'Items added to order' : 'Order created');
                 cart = []; updateCartDisplay();
+                currentOrderId = null; // Reset
                 bootstrap.Modal.getInstance(document.getElementById('addItemsModal')).hide();
                 loadRecentOrders();
+                loadKOTs(); // Auto-refresh KOT section
                 setTimeout(() => location.reload(), 800);
             } else { showToast('error', d.message); }
         } catch (e) { showToast('error', 'Failed to create order'); }
@@ -642,8 +2032,9 @@
 
     function addToCart(dishId, dishName, price, image) {
         const idx = cart.findIndex(i => i.id === dishId && i.size === 1);
+        const defaultImage = '/assets/images/defaultfood.png';
         if (idx > -1) { cart[idx].quantity += 1; }
-        else { cart.push({ id: dishId, name: dishName, basePrice: parseFloat(price), price: parseFloat(price), quantity: 1, size: 1, image: image || 'https://via.placeholder.com/48' }); }
+        else { cart.push({ id: dishId, name: dishName, basePrice: parseFloat(price), price: parseFloat(price), quantity: 1, size: 1, image: (image && image !== 'null' && image !== '') ? image : defaultImage }); }
         updateCartDisplay();
     }
 
@@ -705,7 +2096,12 @@
         try {
             const r = await fetch('/admin/orders/recent', { headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } });
             const d = await r.json();
-            if (!d.success) return;
+            console.log('Recent orders response:', d);
+            if (!d.success) {
+                console.error('Error from server:', d.message);
+                if (d.trace) console.error('Trace:', d.trace);
+                return;
+            }
 
             // Update counts
             if (d.counts) {
@@ -719,62 +2115,83 @@
             }
 
             const ct = document.getElementById('ordersTableBody');
+            console.log('ordersTableBody element:', ct);
+
+            if (!ct) {
+                console.error('ordersTableBody element not found');
+                return;
+            }
+
             const activeTab = document.querySelector('.order-tab.active')?.dataset.type || 'all';
 
-            // Filter orders based on active tab
-            let filteredTables = d.tables;
-            if (activeTab !== 'all' && activeTab !== 'history') {
-                filteredTables = d.tables.map(table => ({
-                    ...table,
-                    orders: table.orders.filter(order => {
-                        if (activeTab === 'cancelled') return order.status === 'cancelled';
-                        return order.order_type === activeTab && order.status !== 'cancelled';
-                    })
-                })).filter(table => table.orders.length > 0);
-            } else if (activeTab === 'history') {
-                // Show completed orders
-                filteredTables = d.tables.map(table => ({
-                    ...table,
-                    orders: table.orders.filter(order => order.status === 'completed')
-                })).filter(table => table.orders.length > 0);
+            console.log('Tables data:', d.tables);
+            console.log('Tables data type:', typeof d.tables);
+            console.log('Tables data length:', d.tables?.length);
+            console.log('Active tab:', activeTab);
+
+            // For now, show all tables with orders without filtering
+            let filteredTables = d.tables.filter(table => table.orders && table.orders.length > 0);
+
+            console.log('Filtered tables:', filteredTables);
+            console.log('Filtered tables length:', filteredTables.length);
+
+            if (filteredTables.length === 0) {
+                ct.innerHTML = '<div class="col-12"><p class="text-muted text-center py-4">No recent orders found</p></div>';
+                return;
             }
 
             ct.innerHTML = filteredTables.map(table => {
-                const oh = table.orders.length ? table.orders.map(order => {
-                    const items = order.items.map(item => `
-                        <li class="d-flex justify-content-between align-items-center py-1" style="font-size:.82rem;border-bottom:1px solid #f1f5f9;">
-                            <span class="${item.status==='cancelled'?'text-decoration-line-through text-muted':''}">${item.name}</span>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="${item.status==='cancelled'?'text-decoration-line-through':''}">x${item.qty}</span>
-                                ${item.status!=='cancelled'?`<button class="order-action-btn danger xs" onclick="event.stopPropagation();cancelOrderItem(${item.id},'${item.name.replace(/'/g,"\\'")}')" title="Cancel item"><i class="bi bi-x"></i></button>`:''}
-                            </div>
-                        </li>
+                const oh = table.orders.length ? table.orders.map((order, orderIndex) => {
+                    const displayItems = order.items.slice(0, 4);
+                    const remainingItems = order.items.length - 4;
+                    const itemsHtml = displayItems.map(item => `
+                        <div class="order-item-row">
+                            <span class="item-name ${item.status==='cancelled'?'text-decoration-line-through text-muted':''}">${item.name}</span>
+                            <span class="item-qty ${item.status==='cancelled'?'text-decoration-line-through':''}">x${item.qty}</span>
+                        </div>
                     `).join('');
-                    return `<div class="border-bottom pb-2 mb-2" style="font-size:.82rem;">
-                        <div class="d-flex justify-content-between small"><span class="fw-medium text-capitalize">${order.status}</span><span class="text-muted">${order.created_at}</span></div>
-                        <ul class="list-unstyled mt-1 mb-1">${items}</ul>
-                        <div class="d-flex justify-content-between small border-top pt-1"><span>Items: ${order.items_count}</span><span class="fw-bold">Rs ${parseFloat(order.total_amount).toFixed(2)}</span></div>
-                        <div class="order-actions">
-                            <button class="order-action-btn danger" onclick="event.stopPropagation();cancelOrder(${order.id})" title="Cancel order"><i class="bi bi-x-circle"></i> Cancel</button>
-                            ${order.status==='pending'?`<button class="order-action-btn muted" onclick="event.stopPropagation();confirmAction('delete', ${order.id})" title="Delete order"><i class="bi bi-trash"></i> Delete</button>`:''}
+
+                    const moreItemsHtml = remainingItems > 0 ? `
+                        <div class="order-item-row more-items">
+                            <span class="text-muted" style="font-size: 11px;">+ ${remainingItems} more items</span>
+                        </div>
+                    ` : '';
+
+                    return `<div class="order-section ${orderIndex > 0 ? 'border-top pt-2 mt-2' : ''}">
+                        <div class="order-id">#${order.order_no || 'ORD-' + order.id}</div>
+                        <div class="order-header">
+                            ${order.order_source === 'qr' ? '<span class="badge bg-primary me-2">QR ORDER</span>' : ''}
+                            <span class="order-status-badge status-${order.status}">${order.status}</span>
+                            <span class="order-time">${order.created_at}</span>
+                        </div>
+                        <div class="order-items">
+                            ${itemsHtml}
+                            ${moreItemsHtml}
+                        </div>
+                        <div class="order-footer">
+                            <span class="items-count">Items: ${order.items_count}</span>
+                            <span class="order-total">Rs ${parseFloat(order.total_amount).toFixed(2)}</span>
+                        </div>
+                        <div class="order-actions-compact">
+                            <button class="action-btn-cancel" onclick="event.stopPropagation();cancelOrder(${order.id})">Cancel</button>
+                            <button class="action-btn-print" onclick="event.stopPropagation();printOrderSlip(${order.id}, '${table.name}')" title="Order Slip">
+                                <i class="bi bi-printer"></i>
+                            </button>
+                            <button class="action-btn-checkout" onclick="event.stopPropagation();openCheckoutModal(${table.id}, '${table.name}', ${order.id})">Checkout</button>
                         </div>
                     </div>`;
                 }).join('') : '<p class="text-muted small py-2 mb-0">No recent orders</p>';
 
                 return `<div class="col-xl-3 col-lg-4 col-md-6">
-                    <div class="order-card-link" style="cursor:pointer;" onclick="window.location.href='/admin/orders/table/${table.id}/edit'">
-                        <div class="order-card-slim">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="mb-0 fw-bold" style="font-size:.85rem;">${table.name}</h6>
-                                <div class="d-flex align-items-center gap-2">
-                                    <a href="/admin/orders/table/${table.id}/edit" class="order-action-btn primary" onclick="event.stopPropagation();" title="Add New"><i class="bi bi-plus-lg"></i></a>
-                                    <span class="dash-badge ${table.status==='available'?'bg-success text-white':'bg-danger text-white'}">${table.status}</span>
-                                </div>
+                    <div class="order-card-compact">
+                        <div class="order-card-header">
+                            <h6 class="table-name">${table.name}</h6>
+                            <div class="header-right">
+                                <span class="status-badge ${table.status==='available'?'available':'occupied'}">${table.status}</span>
                             </div>
+                        </div>
+                        <div class="order-card-body">
                             ${oh}
-                            <div class="card-footer-actions mt-3 pt-2 border-top">
-                                <button class="order-action-btn success w-100" onclick="event.stopPropagation();window.location.href='/admin/orders/table/${table.id}/checkout'"><i class="bi bi-cart-check me-1"></i> Checkout</button>
-                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -784,6 +2201,95 @@
 
     function formatDate(ds) {
         return new Date(ds).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    async function viewOrderDetails(orderId) {
+        try {
+            const r = await fetch(`/admin/orders/${orderId}/details`, {
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+            });
+            const d = await r.json();
+            if (d.success) {
+                showOrderDetailsModal(d.order);
+            } else {
+                showToast('error', d.message);
+            }
+        } catch(e) {
+            showToast('error', 'Failed to load order details');
+        }
+    }
+
+    function showOrderDetailsModal(order) {
+        const itemsHtml = order.items.map(item => `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.size === 0.5 ? 'Half' : item.size === 1 ? 'Full' : 'Full'}</td>
+                <td>${item.quantity}</td>
+                <td>Rs ${parseFloat(item.unit_price).toFixed(2)}</td>
+                <td>Rs ${parseFloat(item.unit_price * item.quantity).toFixed(2)}</td>
+                <td><span class="badge ${item.status === 'pending' ? 'bg-warning' : item.status === 'served' ? 'bg-success' : 'bg-secondary'}">${item.status}</span></td>
+            </tr>
+        `).join('');
+
+        const modalHtml = `
+            <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Order #${order.order_no}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Table:</strong> ${order.table?.name || 'N/A'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Status:</strong> <span class="badge bg-${order.status === 'completed' ? 'success' : order.status === 'cancelled' ? 'danger' : 'warning'}">${order.status}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Order Type:</strong> ${order.order_type || 'Dine In'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Created:</strong> ${new Date(order.created_at).toLocaleString()}
+                                </div>
+                            </div>
+                            <h6 class="mt-4 mb-3">Order Items</h6>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Size</th>
+                                        <th>Qty</th>
+                                        <th>Rate</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHtml}
+                                </tbody>
+                            </table>
+                            <div class="mt-3 text-end">
+                                <strong>Total: Rs ${parseFloat(order.total_amount).toFixed(2)}</strong>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const existingModal = document.getElementById('orderDetailsModal');
+        if (existingModal) existingModal.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        modal.show();
     }
 
     // ── Modern Confirmation Modal ──
@@ -897,8 +2403,11 @@
     });
     async function deleteOrder(orderId) { confirmAction('delete', orderId); }
 
-    function refreshOrders() { loadRecentOrders(); showToast('success', 'Refreshed'); }
+    function refreshOrders() { loadRecentOrders(); loadKOTs(); showToast('success', 'Refreshed'); }
 
+    document.addEventListener('DOMContentLoaded', () => loadRecentOrders());
+</script>
+@endpush
     document.addEventListener('DOMContentLoaded', () => loadRecentOrders());
 </script>
 @endpush
