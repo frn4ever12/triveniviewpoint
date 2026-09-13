@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Schema;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -40,10 +41,21 @@ class WebsiteSetting extends Model implements HasMedia
     {
         parent::boot();
 
-        // Global scope for tenant isolation
+        // Global scope for tenant isolation (only if tenant_id column exists)
         static::addGlobalScope('tenant', function ($query) {
+            if (!Schema::hasColumn('website_settings', 'tenant_id')) {
+                return;
+            }
+            
+            $tenantId = null;
             if (auth()->check() && auth()->user()->tenant_id) {
-                $query->where('tenant_id', auth()->user()->tenant_id);
+                $tenantId = auth()->user()->tenant_id;
+            } elseif (session('current_tenant_id')) {
+                $tenantId = session('current_tenant_id');
+            }
+            
+            if ($tenantId) {
+                $query->where('tenant_id', $tenantId);
             }
         });
     }
