@@ -13,7 +13,7 @@ return new class extends Migration
                 ->nullable()
                 ->after('id')
                 ->constrained('tenants')
-                ->nullOnDelete();
+                ->cascadeOnDelete();
         });
     }
 

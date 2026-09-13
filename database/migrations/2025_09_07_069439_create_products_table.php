@@ -34,7 +34,6 @@ return new class extends Migration
             $table->foreignId('supplier_id')->nullable()->constrained('vendors')->nullOnDelete();
             $table->string('storage_location')->nullable();
             $table->string('status')->default('active');
-            $table->foreignId('tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
             $table->timestamps();
         });
     }
