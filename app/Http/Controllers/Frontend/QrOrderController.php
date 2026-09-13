@@ -15,6 +15,8 @@ class QrOrderController extends Controller
 {
     public function placeOrder(Request $request)
     {
+        \Log::info('QR Order request received', $request->all());
+
         $validated = $request->validate([
             'tenant_slug' => 'required|string',
             'table_id' => 'required|integer',
@@ -28,9 +30,11 @@ class QrOrderController extends Controller
         ]);
 
         // Verify tenant exists and is active
+        \Log::info('Looking for tenant with slug', ['slug' => $validated['tenant_slug']]);
         $tenant = Tenant::where('slug', $validated['tenant_slug'])
             ->where('status', 'active')
             ->firstOrFail();
+        \Log::info('Tenant found', ['tenant_id' => $tenant->id, 'tenant_name' => $tenant->name]);
 
         // Verify table belongs to tenant
         $table = Table::where('id', $validated['table_id'])

@@ -457,7 +457,7 @@
     let cart = [];
     let currentOrder = null;
     let sessionToken = null;
-    let tenantSlug = '{{ $tenant->slug ?? '' }}';
+    let tenantSlug = '{{ $tenant->slug ?? request()->segment(2) ?? '' }}';
     let tableId = {{ $tableRecord->id ?? 'null' }};
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -651,6 +651,7 @@
         };
 
         try {
+            console.log('Placing order with data:', orderData);
             const response = await fetch('/api/qr/order', {
                 method: 'POST',
                 headers: {
@@ -660,7 +661,9 @@
                 body: JSON.stringify(orderData)
             });
 
+            console.log('Response status:', response.status);
             const result = await response.json();
+            console.log('Response data:', result);
 
             if (result.success) {
                 sessionToken = result.session_token;
@@ -686,6 +689,7 @@
                 bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
                 new bootstrap.Modal(document.getElementById('orderConfirmModal')).show();
             } else {
+                console.error('Order failed:', result);
                 alert(result.message || 'Failed to place order');
             }
         } catch (error) {
