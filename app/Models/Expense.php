@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Expense extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'expense_number',
         'label_id',
         'employee_id',
@@ -126,4 +127,28 @@ class Expense extends Model
     {
         return $this->belongsTo(User::class, 'entry_user_id');
     }
-}
+
+    public function scopeForTenant($query, $tenantId)
+    {
+        return $query->where('tenant_id', $tenantId);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
+
+        static::creating(function ($expense) {
+            if (empty($expense->expense_number)) {
+                $expense->expense_number = static::generateExpenseNumber();
+            }
+        });
+    }
+
+    public static function generateExpenseNumber()

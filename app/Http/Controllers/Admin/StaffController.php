@@ -34,6 +34,7 @@ class StaffController extends Controller
 
         try {
             $data = $request->validated();
+            $data['tenant_id'] = auth()->user()->tenant_id;
 
             if (!empty($data['password'])) {
                 $data['password'] = Hash::make($data['password']);
@@ -63,12 +64,20 @@ class StaffController extends Controller
 
     public function show(User $staff)
     {
+        // Verify staff belongs to current tenant
+        if ($staff->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to staff');
+        }
         $staff->load('media');
         return view('admin.staff.show', compact('staff'));
     }
 
     public function edit(User $staff)
     {
+        // Verify staff belongs to current tenant
+        if ($staff->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to staff');
+        }
         $roles = Role::all();
         $staff->load('media');
         return view('admin.staff.edit', compact('staff', 'roles'));
@@ -76,6 +85,10 @@ class StaffController extends Controller
 
     public function update(StaffRequest $request, User $staff)
     {
+        // Verify staff belongs to current tenant
+        if ($staff->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to staff');
+        }
         $data = $request->validated();
 
         if (!empty($data['password'])) {
@@ -108,6 +121,10 @@ class StaffController extends Controller
 
     public function destroy(User $staff)
     {
+        // Verify staff belongs to current tenant
+        if ($staff->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to staff');
+        }
         DB::beginTransaction();
         try {
             $staff->clearMediaCollection('profile_image');
@@ -129,6 +146,13 @@ class StaffController extends Controller
 
     public function toggleLogin(User $staff): JsonResponse
     {
+        // Verify staff belongs to current tenant
+        if ($staff->tenant_id != auth()->user()->tenant_id) {
+            return response()->json([
+                'message' => 'Unauthorized access to staff',
+                'success' => false,
+            ], 403);
+        }
         $staff->login_enabled = !$staff->login_enabled;
         if ($staff->login_enabled && !$staff->password) {
             return response()->json([

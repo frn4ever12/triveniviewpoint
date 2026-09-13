@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ComboController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DeliveryController;
 use App\Http\Controllers\Admin\DigitalMenuController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\KitchenConsumptionController;
@@ -145,6 +146,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:orders.view')->group(function () {
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+        Route::post('/orders/quick-billing', [OrderController::class, 'quickBilling'])->name('orders.quick-billing');
         Route::get('/orders/recent', [OrderController::class, 'getRecentOrders'])->name('orders.recent');
         Route::get('/orders/active', [OrderController::class, 'getActiveOrders'])->name('orders.active');
         Route::get('/orders/list', [OrderController::class, 'orderdetailtable'])->name('orders.details');
@@ -165,6 +167,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/orders/table/{table}/checkout', [OrderController::class, 'showCheckout'])
             ->name('orders.table.checkout')
             ->middleware('can:checkout-view');
+        Route::get('/orders/table/{table}/checkout-data', [OrderController::class, 'getCheckoutData'])
+            ->name('orders.table.checkout-data')
+            ->middleware('can:checkout-view');
+        Route::get('/orders/{order}/checkout-data', [OrderController::class, 'getOrderCheckoutData'])
+            ->name('orders.checkout-data')
+            ->middleware('can:checkout-view');
         Route::post('/orders/table/{table}/checkout', [OrderController::class, 'checkoutTable'])
             ->name('orders.table.process-checkout')
             ->middleware('can:checkout-process');
@@ -178,6 +186,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/order-items/{orderItem}/status', [OrderController::class, 'updateOrderItemStatus'])
             ->name('order-items.status');
 
+        Route::get('/delivery', [DeliveryController::class, 'index'])->name('delivery.index');
         Route::get('/orders/delivery', [OrderController::class, 'showDeliveryOrders'])->name('orders.delivery');
         Route::get('/orders/dine-in', [OrderController::class, 'showDineInOrders'])->name('orders.dine-in');
         Route::get('/orders/takeaway', [OrderController::class, 'showTakeawayOrders'])->name('orders.takeaway');
@@ -193,6 +202,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/orders/cancelled/data', [OrderController::class, 'getCancelledOrders'])->name('orders.cancelled.data');
         Route::get('/orders/history/data', [OrderController::class, 'getOrderHistory'])->name('orders.history.data');
         Route::delete('/orders/{id}', [OrderController::class, 'destroy'])->name('orders.destroy');
+        Route::put('/orders/{id}/add-items', [OrderController::class, 'addItems'])->name('orders.add-items');
         Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder'])
             ->name('orders.cancel');
         Route::post('/order-items/{id}/cancel', [OrderController::class, 'cancelOrderItem'])
@@ -200,6 +210,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/orders/{id}/details', [OrderController::class, 'getOrderDetails'])
             ->name('onlineorders.details');
+        Route::get('/orders/{id}/bill', [OrderController::class, 'printBill'])
+            ->name('orders.bill');
+        Route::get('/orders/{id}/kot', [OrderController::class, 'printKot'])
+            ->name('orders.kot');
         Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/orders/{id}/update-delivery-status', [OrderController::class, 'updateDeliveryStatus'])
             ->name('orders.updateDeliveryStatus');
@@ -246,6 +260,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:digital-menu.view')->group(function () {
         Route::get('/digital-menu', [DigitalMenuController::class, 'index'])->name('digital-menu.index');
     });
+
+    // Notification routes
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     Route::get('/pos-settings', [PosSettingController::class, 'index'])
         ->name('pos-settings.index');

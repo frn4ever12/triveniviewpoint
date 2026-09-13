@@ -10,6 +10,7 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'order_id',
         'invoice_number',
         'customer_name',
@@ -46,13 +47,16 @@ class Invoice extends Model
     {
         parent::boot();
 
-        static::creating(function ($invoice) {
-            $date = now()->format('Ymd');
-            $lastInvoice = self::where('invoice_number', 'like', "INV-{$date}%")
-                ->orderBy('invoice_number', 'desc')
-                ->first();
-            $newNumber = $lastInvoice ? (int) substr($lastInvoice->invoice_number, -3) + 1 : 1;
-            $invoice->invoice_number = "INV-{$date}-".str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
         });
+    }
+
+    public function scopeForTenant($query, $tenantId)
+    {
+        return $query->where('tenant_id', $tenantId);
     }
 }

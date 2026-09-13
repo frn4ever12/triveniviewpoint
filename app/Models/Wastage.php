@@ -44,6 +44,13 @@ class Wastage extends Model
     {
         parent::boot();
 
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
+
         static::creating(function ($wastage) {
             $date = now()->format('Ym');
             $lastWastage = self::where('wastage_no', 'like', "WST-{$date}%")

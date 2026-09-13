@@ -43,6 +43,13 @@ class StockAdjustment extends Model
     {
         parent::boot();
 
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
+
         static::creating(function ($adjustment) {
             $date = now()->format('Ym');
             $lastAdjustment = self::where('adjustment_no', 'like', "ADJ-{$date}%")

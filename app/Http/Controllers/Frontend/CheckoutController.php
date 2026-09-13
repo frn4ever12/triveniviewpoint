@@ -182,11 +182,21 @@ class CheckoutController extends Controller
     {
         $date = now()->format('Ymd');
 
-        // Get today's invoice count
-        $count = Invoice::whereDate('created_at', now()->toDateString())->count() + 1;
+        $lastInvoice = Invoice::withoutGlobalScopes()
+            ->where('invoice_number', 'like', "INV-{$date}%")
+            ->orderBy('invoice_number', 'desc')
+            ->first();
 
-        // Format: INV-20250111-001
-        return sprintf('INV-%s-%03d', $date, $count);
+        $newNumber = $lastInvoice ? (int) substr($lastInvoice->invoice_number, -4) + 1 : 1;
+
+        // Ensure uniqueness by checking if this invoice_number already exists
+        $invoiceNo = "INV-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        while (Invoice::withoutGlobalScopes()->where('invoice_number', $invoiceNo)->exists()) {
+            $newNumber++;
+            $invoiceNo = "INV-{$date}-".str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $invoiceNo;
     }
 
     /**

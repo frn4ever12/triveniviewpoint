@@ -30,7 +30,8 @@ class ExpenseController extends Controller
         try {
             $data = $request->validated();
             
-            // Set entry user
+            // Set tenant and entry user
+            $data['tenant_id'] = auth()->user()->tenant_id;
             $data['entry_user_id'] = Auth::id();
             
             // Calculate tax amount if not provided
@@ -61,18 +62,30 @@ class ExpenseController extends Controller
 
     public function show(Expense $expense)
     {
+        // Verify expense belongs to current tenant
+        if ($expense->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to expense');
+        }
         $expense->load(['label', 'staff', 'entryUser', 'supplier']);
         return view('admin.expense.show', compact('expense'));
     }
 
     public function edit(Expense $expense)
     {
+        // Verify expense belongs to current tenant
+        if ($expense->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to expense');
+        }
         $expense->load(['label']);
         return view('admin.expense.edit', compact('expense'));
     }
 
     public function update(ExpenseRequest $request, Expense $expense)
     {
+        // Verify expense belongs to current tenant
+        if ($expense->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to expense');
+        }
         DB::beginTransaction();
 
         try {
@@ -102,6 +115,10 @@ class ExpenseController extends Controller
 
     public function destroy(Expense $expense)
     {
+        // Verify expense belongs to current tenant
+        if ($expense->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to expense');
+        }
         DB::beginTransaction();
 
         try {
@@ -158,16 +175,19 @@ class ExpenseController extends Controller
     public function getStats(): JsonResponse
     {
         try {
+            $tenantId = auth()->user()->tenant_id;
             $stats = [
-                'total_expenses' => Expense::count(),
-                'total_amount' => Expense::sum('amount'),
-                'total_tax' => Expense::sum('tax_amount'),
-                'pending_count' => Expense::where('status', 'pending')->count(),
-                'approved_count' => Expense::where('status', 'approved')->count(),
-                'paid_count' => Expense::where('status', 'paid')->count(),
-                'this_month_count' => Expense::whereMonth('expense_date', now()->month)
+                'total_expenses' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)->count(),
+                'total_amount' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)->sum('amount'),
+                'total_tax' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)->sum('tax_amount'),
+                'pending_count' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', 'pending')->count(),
+                'approved_count' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', 'approved')->count(),
+                'paid_count' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', 'paid')->count(),
+                'this_month_count' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)
+                    ->whereMonth('expense_date', now()->month)
                     ->whereYear('expense_date', now()->year)->count(),
-                'this_month_amount' => Expense::whereMonth('expense_date', now()->month)
+                'this_month_amount' => Expense::withoutGlobalScopes()->where('tenant_id', $tenantId)
+                    ->whereMonth('expense_date', now()->month)
                     ->whereYear('expense_date', now()->year)->sum('amount'),
             ];
 

@@ -2,6 +2,9 @@
 <html lang="en">
 
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     @include('admin.includes.top')
     @yield('title')
     @stack('styles')
@@ -116,6 +119,51 @@
                     overlay.classList.add('d-none');
                 });
             }
+
+            // Initialize feather icons
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+
+            // Handle sidebar collapse behavior
+            const collapseElements = document.querySelectorAll('.collapse');
+            collapseElements.forEach(function(collapse) {
+                collapse.addEventListener('show.bs.collapse', function() {
+                    // Re-initialize feather icons when submenu opens
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
+
+                    // Close other collapses in the same parent
+                    const parent = this.closest('.navbar-nav');
+                    if (parent) {
+                        const otherCollapses = parent.querySelectorAll('.collapse.show');
+                        otherCollapses.forEach(function(otherCollapse) {
+                            if (otherCollapse !== this) {
+                                const bsCollapse = bootstrap.Collapse.getInstance(otherCollapse);
+                                if (bsCollapse) {
+                                    bsCollapse.hide();
+                                }
+                            }
+                        }.bind(this));
+                    }
+                });
+
+                collapse.addEventListener('hidden.bs.collapse', function() {
+                    // Re-initialize feather icons when submenu closes
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
+                });
+            });
+
+            // Ensure chevron icons are visible
+            const navArrows = document.querySelectorAll('.nav-arrow');
+            navArrows.forEach(function(arrow) {
+                arrow.style.display = 'inline-block';
+                arrow.style.width = '16px';
+                arrow.style.height = '16px';
+            });
         });
     </script>
     

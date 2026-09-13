@@ -76,4 +76,16 @@ class InventoryTransaction extends Model
     {
         return $query->where('reference_type', $type)->where('reference_id', $id);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
+    }
 }

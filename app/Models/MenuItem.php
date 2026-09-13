@@ -15,7 +15,7 @@ class MenuItem extends Model implements HasMedia
     use HasSlug, InteractsWithMedia;
 
     protected $fillable = [
-        'name', 'slug', 'category_id',
+        'tenant_id', 'name', 'slug', 'category_id',
         'description', 'ingredients',
         'price', 'cost_price', 'vat_percent',
         'final_price', 'discount_type', 'discount_value', 'discount_amount',
@@ -65,7 +65,8 @@ class MenuItem extends Model implements HasMedia
 
     public function getImageUrlAttribute()
     {
-        return $this->getFirstMediaUrl('image');
+        $url = $this->getFirstMediaUrl('image');
+        return $url ?: '/assets/images/defaultfood.png';
     }
 
     public function getImageThumbUrlAttribute()
@@ -113,14 +114,31 @@ class MenuItem extends Model implements HasMedia
 
     // ── Scopes ─────────────────────────────────────────────────────
 
+    public function scopeFeatured($query)
+    {
+        return $query->where('is_featured', true);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', CommonStatusEnum::ACTIVE);
     }
 
-    public function scopeFeatured($query)
+    public function scopeForTenant($query, $tenantId)
     {
-        return $query->where('is_featured', true);
+        return $query->where('tenant_id', $tenantId);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
+        });
     }
 
     // ── Financial Helpers ──────────────────────────────────────────

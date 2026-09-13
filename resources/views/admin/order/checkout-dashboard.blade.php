@@ -928,7 +928,11 @@
                     $orderCount = $activeOrders->count();
                     $totalDue = $activeOrders->sum(fn($o) => $o->items->sum('total'));
                 @endphp
-                <a href="{{ $isOccupied ? route('admin.orders.table.checkout', $table) : '#' }}"
+                <a href="#"
+                   data-table-id="{{ $table->id }}"
+                   data-table-name="{{ $table->name }}"
+                   data-bs-toggle="modal"
+                   data-bs-target="#checkoutModal"
                    class="cd-table-card {{ $isOccupied ? 'occupied' : 'available' }} cd-animate-in"
                    @if(!$isOccupied) onclick="return false;" style="cursor:default;" @endif>
 

@@ -4,12 +4,17 @@ namespace Database\Seeders;
 
 use App\Enums\CommonStatusEnum;
 use App\Models\Category;
+use App\Models\Tenant;
 use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
 {
     public function run(): void
     {
+        // Get first tenant from database
+        $tenant = Tenant::first();
+        $tenantId = $tenant ? $tenant->id : 1;
+
         $categories = [
             [
                 'name' => 'Appetizers',
@@ -90,12 +95,24 @@ class CategorySeeder extends Seeder
                 'status' => CommonStatusEnum::ACTIVE,
                 'is_featured' => true,
             ],
+            [
+                'name' => 'Chowmein',
+                'slug' => 'chowmein',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => true,
+            ],
+            [
+                'name' => 'Pakauda',
+                'slug' => 'pakauda',
+                'status' => CommonStatusEnum::ACTIVE,
+                'is_featured' => false,
+            ],
         ];
 
         foreach ($categories as $data) {
             Category::updateOrCreate(
-                ['slug' => $data['slug']],
-                array_merge($data, ['tenant_id' => 1])
+                ['slug' => $data['slug'], 'tenant_id' => $tenantId],
+                array_merge($data, ['tenant_id' => $tenantId])
             );
         }
     }

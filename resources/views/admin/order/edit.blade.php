@@ -204,42 +204,46 @@ body { background: #f1f5f9; }
 .order-action-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.75rem;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
     border-radius: 8px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    border: 1.5px solid transparent;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: all 0.2s ease;
-    background: transparent;
-    text-decoration: none;
+    white-space: nowrap;
 }
+
+.order-action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .order-action-btn.danger {
+    background: #fef2f2;
     color: #dc2626;
     border-color: #fecaca;
-    background: #fef2f2;
 }
-
-.order-action-btn.danger:hover {
-    background: #dc2626;
-    color: #fff;
-    border-color: #dc2626;
-    box-shadow: 0 2px 8px rgba(220,38,38,0.2);
-}
+.order-action-btn.danger:hover:not(:disabled) { background: #dc2626; color: #fff; }
 
 .order-action-btn.muted {
+    background: #f8fafc;
     color: #64748b;
     border-color: #e2e8f0;
-    background: #f8fafc;
 }
+.order-action-btn.muted:hover:not(:disabled) { background: #475569; color: #fff; border-color: #475569; }
 
-.order-action-btn.muted:hover {
-    background: #e2e8f0;
-    color: #0f172a;
-    border-color: #cbd5e1;
+.order-action-btn.info {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #dbeafe;
 }
+.order-action-btn.info:hover:not(:disabled) { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+.order-action-btn.warning {
+    background: #fef3c7;
+    color: #d97706;
+    border-color: #fde68a;
+}
+.order-action-btn.warning:hover:not(:disabled) { background: #d97706; color: #fff; border-color: #d97706; }
 
 .cancel-item-btn {
     display: inline-flex;
@@ -762,12 +766,12 @@ body { background: #f1f5f9; }
                         @foreach($order->items as $item)
                             <div class="order-item-row @if($item->status === 'cancelled') text-muted text-decoration-line-through @endif">
                                 <span class="item-qty">{{ $item->quantity }}x</span>
-                                <span class="item-name">{{ $item->dish->name }}</span>
+                                <span class="item-name">{{ $item->menuItem ? $item->menuItem->name : 'Unknown' }}</span>
                                 <span class="item-price">Rs {{ number_format($item->total, 2) }}</span>
                                 <span class="item-status">
                                     <span class="status-pill {{ $item->status }}">{{ $item->status }}</span>
                                     @if($item->status !== 'cancelled')
-                                        <button type="button" class="cancel-item-btn" onclick="cancelOrderItem({{ $item->id }}, '{{ $order->order_no }}', '{{ addslashes($item->dish->name) }}')" title="Cancel item">
+                                        <button type="button" class="cancel-item-btn" onclick="cancelOrderItem({{ $item->id }}, '{{ $order->order_no }}', '{{ addslashes($item->menuItem ? $item->menuItem->name : 'Unknown') }}')" title="Cancel item">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                         </button>
                                     @endif
@@ -776,13 +780,21 @@ body { background: #f1f5f9; }
                         @endforeach
                     </div>
                     <div class="order-card-footer" data-order-id="{{ $order->id }}">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="waiter-info">
                                 @if($order->waiter)<i data-feather="user" width="13" height="13"></i> {{ $order->waiter->name }}@endif
                             </span>
                             @if($order->notes)
                                 <span style="font-size:0.78rem;color:#94a3b8;font-style:italic;">"{{ Str::limit($order->notes, 25) }}"</span>
                             @endif
+                            <button class="order-action-btn info" onclick="printOrderBill({{ $order->id }})" title="Print Bill">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                Print Bill
+                            </button>
+                            <button class="order-action-btn warning" onclick="printOrderKot({{ $order->id }})" title="Print KOT">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Print KOT
+                            </button>
                             <button class="order-action-btn danger" onclick="cancelEntireOrder({{ $order->id }}, '{{ $order->order_no }}')" title="Cancel entire order">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                 Cancel All
@@ -816,7 +828,7 @@ body { background: #f1f5f9; }
                             <div class="kot-card-body">
                                 @forelse($kot->items as $item)
                                     <div class="kot-item-row">
-                                        <span>{{ $item->quantity }}× {{ $item->dish->name }}</span>
+                                        <span>{{ $item->quantity }}× {{ $item->menuItem ? $item->menuItem->name : 'Unknown' }}</span>
                                         <span class="status-pill {{ $item->status }}">{{ $item->status }}</span>
                                     </div>
                                 @empty
@@ -897,7 +909,7 @@ body { background: #f1f5f9; }
                                                     data-id="{{ $dish->id }}"
                                                     data-name="{{ $dish->name }}"
                                                     data-price="{{ $dish->price }}"
-                                                    data-image="{{ $dish->image_url }}">+ Add</button>
+                                                    data-image="{{ $dish->image_url ?: '/assets/images/defaultfood.png' }}">+ Add</button>
                                             </div>
                                         </div>
                                     @endforeach
@@ -1116,6 +1128,50 @@ function cancelEntireOrder(orderId, orderNo) {
 function deleteOrder(orderId, orderNo) {
     confirmActionEdit('delete', orderId, orderNo);
 }
+
+async function printOrderBill(orderId) {
+    try {
+        const resp = await fetch('/admin/orders/' + orderId + '/bill', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await resp.json();
+        if (data.success && data.html) {
+            const pw = window.open('', '_blank', 'width=420,height=600');
+            pw.document.write(data.html);
+            pw.document.close();
+            pw.onload = function() {
+                pw.print();
+                pw.onafterprint = function() { pw.close(); };
+            };
+        } else {
+            if (window.showToast) showToast('error', 'Failed to load bill');
+        }
+    } catch (err) {
+        if (window.showToast) showToast('error', 'Failed to print bill');
+    }
+}
+
+async function printOrderKot(orderId) {
+    try {
+        const resp = await fetch('/admin/orders/' + orderId + '/kot', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await resp.json();
+        if (data.success && data.html) {
+            const pw = window.open('', '_blank', 'width=420,height=600');
+            pw.document.write(data.html);
+            pw.document.close();
+            pw.onload = function() {
+                pw.print();
+                pw.onafterprint = function() { pw.close(); };
+            };
+        } else {
+            if (window.showToast) showToast('error', 'Failed to load KOT');
+        }
+    } catch (err) {
+        if (window.showToast) showToast('error', 'Failed to print KOT');
+    }
+}
 </script>
-<script src="{{ asset('assets/js/admin/order-edit.js') }}"></script>
+<script src="{{ asset('assets/js/admin/order-edit.js') }}?v={{ time() }}"></script>
 @endpush

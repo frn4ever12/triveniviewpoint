@@ -51,7 +51,8 @@
         height: 16px !important;
     }
     /* Ensure all feather icons in sidebar are visible */
-    .navbar-vertical i[data-feather] {
+    .navbar-vertical i[data-feather],
+    .navbar-vertical svg.feather {
         display: inline-block !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -64,6 +65,113 @@
         visibility: visible !important;
         opacity: 1 !important;
     }
+    /* Ensure submenu icons are always visible */
+    .collapse.show i[data-feather],
+    .collapse.show svg.feather,
+    .collapse i[data-feather],
+    .collapse svg.feather {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        vertical-align: middle !important;
+    }
+    .collapse.show .icon-xs,
+    .collapse .icon-xs {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+    /* Force visibility on all nav-link icons */
+    .nav-link i,
+    .nav-link svg {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    /* Force visibility on all icons in collapsed/expanded menus */
+    .navbar-vertical .nav-link i,
+    .navbar-vertical .nav-link svg,
+    .navbar-vertical .collapse i,
+    .navbar-vertical .collapse svg,
+    .navbar-vertical .collapse.show i,
+    .navbar-vertical .collapse.show svg {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+    /* Ultra-specific rules for submenu icons */
+    nav.navbar-vertical ul li a i[data-feather],
+    nav.navbar-vertical ul li a svg.feather,
+    nav.navbar-vertical .collapse ul li a i[data-feather],
+    nav.navbar-vertical .collapse ul li a svg.feather,
+    nav.navbar-vertical .collapse.show ul li a i[data-feather],
+    nav.navbar-vertical .collapse.show ul li a svg.feather {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+    }
+    /* Target all SVG elements in navbar */
+    .navbar-vertical svg {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+    }
+    /* Target all i elements with data-feather */
+    .navbar-vertical i[data-feather] {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+    }
+    /* Target nav-icon class specifically */
+    .nav-icon {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+    }
+    /* Target icon-xs class */
+    .icon-xs {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        min-width: 16px !important;
+        min-height: 16px !important;
+    }
+    /* Global rule for all SVG elements to ensure visibility */
+    svg {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    /* Global rule for all i elements to ensure visibility */
+    i {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
     @media (max-width: 767.98px) {
         .nav-arrow {
             display: inline-block !important;
@@ -72,7 +180,7 @@
     }
 </style>
 
-<nav class="navbar-vertical navbar bg-dark">
+<nav class="navbar-vertical navbar" style="background: var(--sidebar);">
     <div>
         <a class="navbar-brand" href="{{ route('dashboard') }}">
             <div class="d-flex align-items-center">
@@ -116,7 +224,7 @@
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                     href="{{ route('dashboard') }}">
-                    <i data-feather="grid" class="nav-icon icon-xs me-2"></i> Dashboard
+                    <i data-feather="grid" class="nav-icon icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> Dashboard
                 </a>
             </li>
 
@@ -125,21 +233,21 @@
                 <a class="nav-link has-arrow {{ $isSubmenuActive(['admin.orders.pos']) ? 'active' : '' }}"
                    href="#!" data-bs-toggle="collapse" data-bs-target="#navPOS"
                    aria-expanded="{{ $isSubmenuActive(['admin.orders.pos']) ? 'true' : 'false' }}" aria-controls="navPOS">
-                    <i data-feather="shopping-cart" class="nav-icon icon-xs me-2"></i> POS
+                    <i data-feather="shopping-cart" class="nav-icon icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> POS
                     <span class="nav-arrow ms-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important;"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </span>
                 </a>
                 <div id="navPOS" class="collapse {{ $isSubmenuActive(['admin.orders.pos']) ? 'show' : '' }}">
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.orders.pos') ? 'active' : '' }}" href="{{ route('admin.orders.pos') }}">
-                                <i data-feather="circle" class="icon-xs me-2"></i> POS Dashboard
+                                <i data-feather="circle" class="icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> POS Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('admin.orders.pos') }}">
-                                <i data-feather="circle" class="icon-xs me-2"></i> New POS Order
+                                <i data-feather="circle" class="icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> New POS Order
                             </a>
                         </li>
                         <li class="nav-item">
@@ -398,7 +506,7 @@
                 <div id="navMenu" class="collapse {{ $isSubmenuActive(['admin.menu-items.*', 'admin.categories.*']) ? 'show' : '' }}">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {{ request()->routeIs('admin.categories.index') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}">
                                 <i data-feather="circle" class="icon-xs me-2"></i> Menu Dashboard
                             </a>
                         </li>
@@ -1140,58 +1248,3 @@
         </ul>
     </div>
 </nav>
-
-<script>
-    // Initialize feather icons with multiple attempts
-    function initFeatherIcons() {
-        if (typeof feather !== 'undefined') {
-            feather.replace();
-            return true;
-        }
-        return false;
-    }
-
-    // Try to initialize feather icons immediately
-    initFeatherIcons();
-
-    // Try again after DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(initFeatherIcons, 100);
-        setTimeout(initFeatherIcons, 500);
-
-        // Handle collapse behavior - allow independent collapsing
-        const collapseElements = document.querySelectorAll('.collapse');
-        collapseElements.forEach(function(collapse) {
-            collapse.addEventListener('show.bs.collapse', function() {
-                // Re-initialize feather icons after collapse animation
-                setTimeout(initFeatherIcons, 100);
-            });
-            collapse.addEventListener('shown.bs.collapse', function() {
-                // Re-initialize feather icons after collapse is fully shown
-                setTimeout(initFeatherIcons, 50);
-            });
-        });
-
-        // Ensure active submenu is shown on page load
-        const activeSubmenu = document.querySelector('.collapse.show');
-        if (activeSubmenu) {
-            const trigger = document.querySelector('[data-bs-target="#' + activeSubmenu.id + '"]');
-            if (trigger) {
-                trigger.setAttribute('aria-expanded', 'true');
-                trigger.classList.add('active');
-            }
-            // Re-initialize feather icons for active submenu
-            setTimeout(initFeatherIcons, 200);
-        }
-    });
-
-    // Final attempt after window load
-    window.addEventListener('load', function() {
-        setTimeout(initFeatherIcons, 200);
-        setTimeout(initFeatherIcons, 500);
-    });
-
-    // Also initialize on Turbo/HTMX navigation if using those
-    document.addEventListener('turbo:load', initFeatherIcons);
-    document.addEventListener('htmx:afterSettle', initFeatherIcons);
-</script>

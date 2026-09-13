@@ -12,18 +12,21 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'order_no',
         'table_id',
         'waiter_id',
         'entry_user_id',
         'customer_name',
         'customer_phone',
+        'customer_session_token',
         'delivery_address',
         'delivery_status',
         'no_of_guests',
         'paid_amount',
         'payment_status',
         'order_type',
+        'order_source',
         'kot_group_id',
         'kot_sent_at',
         'status',
@@ -97,13 +100,16 @@ class Order extends Model
     {
         parent::boot();
 
-        static::creating(function ($order) {
-            $date = now()->format('Ym');
-            $lastOrder = self::where('order_no', 'like', "ORD-{$date}%")
-                ->orderBy('order_no', 'desc')
-                ->first();
-            $newNumber = $lastOrder ? (int) substr($lastOrder->order_no, -4) + 1 : 1;
-            $order->order_no = "ORD-{$date}-" . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        // Global scope for tenant isolation
+        static::addGlobalScope('tenant', function ($query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
+            }
         });
+    }
+
+    public function scopeForTenant($query, $tenantId)
+    {
+        return $query->where('tenant_id', $tenantId);
     }
 }

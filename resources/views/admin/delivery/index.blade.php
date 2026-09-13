@@ -86,43 +86,43 @@
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="delivery-card pending">
                     <div class="text-muted small text-uppercase mb-1">Pending</div>
-                    <div class="h3 mb-0">5</div>
-                    <small class="text-muted">Rs. 2,450</small>
+                    <div class="h3 mb-0">{{ $pendingOrders->count() }}</div>
+                    <small class="text-muted">Rs. {{ number_format($pendingTotal, 2) }}</small>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="delivery-card confirmed">
                     <div class="text-muted small text-uppercase mb-1">Confirmed</div>
-                    <div class="h3 mb-0">3</div>
-                    <small class="text-muted">Rs. 1,850</small>
+                    <div class="h3 mb-0">{{ $confirmedOrders->count() }}</div>
+                    <small class="text-muted">Rs. {{ number_format($confirmedTotal, 2) }}</small>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="delivery-card preparing">
                     <div class="text-muted small text-uppercase mb-1">Preparing</div>
-                    <div class="h3 mb-0">2</div>
-                    <small class="text-muted">Rs. 1,200</small>
+                    <div class="h3 mb-0">{{ $preparingOrders->count() }}</div>
+                    <small class="text-muted">Rs. {{ number_format($preparingTotal, 2) }}</small>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="delivery-card ready">
                     <div class="text-muted small text-uppercase mb-1">Ready</div>
-                    <div class="h3 mb-0">4</div>
-                    <small class="text-muted">Rs. 3,100</small>
+                    <div class="h3 mb-0">{{ $readyOrders->count() }}</div>
+                    <small class="text-muted">Rs. {{ number_format($readyTotal, 2) }}</small>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="delivery-card on-the-way">
                     <div class="text-muted small text-uppercase mb-1">On The Way</div>
-                    <div class="h3 mb-0">6</div>
-                    <small class="text-muted">Rs. 4,850</small>
+                    <div class="h3 mb-0">{{ $onTheWayOrders->count() }}</div>
+                    <small class="text-muted">Rs. {{ number_format($onTheWayTotal, 2) }}</small>
                 </div>
             </div>
             <div class="col-lg-2 col-md-4 col-sm-6">
                 <div class="delivery-card delivered">
                     <div class="text-muted small text-uppercase mb-1">Delivered</div>
-                    <div class="h3 mb-0">28</div>
-                    <small class="text-muted">Rs. 24,500</small>
+                    <div class="h3 mb-0">{{ $deliveredOrders->count() }}</div>
+                    <small class="text-muted">Rs. {{ number_format($deliveredTotal, 2) }}</small>
                 </div>
             </div>
         </div>
@@ -150,68 +150,25 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @forelse($activeOrders as $order)
                                     <tr>
-                                        <td><strong>#ORD-1025</strong></td>
-                                        <td>Ram Sharma</td>
-                                        <td>9800000001</td>
-                                        <td>Thamel, Kathmandu</td>
-                                        <td>Rs. 1,450</td>
-                                        <td>Bikash</td>
-                                        <td><span class="status-badge on-the-way">On The Way</span></td>
+                                        <td><strong>#{{ $order->order_no }}</strong></td>
+                                        <td>{{ $order->invoice?->customer_name ?? 'N/A' }}</td>
+                                        <td>{{ $order->invoice?->customer_phone ?? 'N/A' }}</td>
+                                        <td>{{ $order->invoice?->delivery_address ?? 'N/A' }}</td>
+                                        <td>Rs. {{ number_format($order->invoice?->total_amount ?? 0, 2) }}</td>
+                                        <td>{{ $order->driver?->name ?? '-' }}</td>
+                                        <td><span class="status-badge {{ $order->status }}">{{ str_replace('_', ' ', $order->status) }}</span></td>
                                         <td>
                                             <button class="btn btn-sm btn-outline-primary"><i data-feather="map-pin" class="icon-xs"></i></button>
                                             <button class="btn btn-sm btn-outline-success"><i data-feather="phone" class="icon-xs"></i></button>
                                         </td>
                                     </tr>
+                                    @empty
                                     <tr>
-                                        <td><strong>#ORD-1024</strong></td>
-                                        <td>Sita Devi</td>
-                                        <td>9800000002</td>
-                                        <td>Lazimpat, Kathmandu</td>
-                                        <td>Rs. 890</td>
-                                        <td>Hari</td>
-                                        <td><span class="status-badge picked-up">Picked Up</span></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary"><i data-feather="map-pin" class="icon-xs"></i></button>
-                                            <button class="btn btn-sm btn-outline-success"><i data-feather="phone" class="icon-xs"></i></button>
-                                        </td>
+                                        <td colspan="8" class="text-center py-4 text-muted">No active delivery orders</td>
                                     </tr>
-                                    <tr>
-                                        <td><strong>#ORD-1023</strong></td>
-                                        <td>Krishna Bahadur</td>
-                                        <td>9800000003</td>
-                                        <td>Baluwatar, Kathmandu</td>
-                                        <td>Rs. 2,100</td>
-                                        <td>-</td>
-                                        <td><span class="status-badge ready">Ready</span></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-primary">Assign Driver</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>#ORD-1022</strong></td>
-                                        <td>Maya Tamang</td>
-                                        <td>9800000004</td>
-                                        <td>Baneshwor, Kathmandu</td>
-                                        <td>Rs. 650</td>
-                                        <td>-</td>
-                                        <td><span class="status-badge preparing">Preparing</span></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-secondary">View</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>#ORD-1021</strong></td>
-                                        <td>Dipak Rai</td>
-                                        <td>9800000005</td>
-                                        <td>New Baneshwor</td>
-                                        <td>Rs. 1,200</td>
-                                        <td>-</td>
-                                        <td><span class="status-badge confirmed">Confirmed</span></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-secondary">View</button>
-                                        </td>
-                                    </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -225,52 +182,17 @@
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-column gap-3">
+                            @forelse($drivers as $driver)
                             <div class="driver-card">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle bg-success d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                        <span class="text-white fw-bold">BS</span>
+                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <span class="text-white fw-bold">{{ strtoupper(substr($driver->name, 0, 2)) }}</span>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <h6 class="mb-0">Bikash Sharma</h6>
-                                        <small class="text-muted">9800000010</small>
+                                        <h6 class="mb-0">{{ $driver->name }}</h6>
+                                        <small class="text-muted">{{ $driver->phone ?? 'N/A' }}</small>
                                     </div>
                                     <span class="badge bg-success">Available</span>
-                                </div>
-                                <div class="mt-2 pt-2 border-top">
-                                    <div class="d-flex justify-content-between small">
-                                        <span class="text-muted">Active: 2</span>
-                                        <span class="text-muted">Today: Rs. 450</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="driver-card">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                        <span class="text-white fw-bold">HK</span>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-0">Hari Krishna</h6>
-                                        <small class="text-muted">9800000011</small>
-                                    </div>
-                                    <span class="badge bg-warning">Busy</span>
-                                </div>
-                                <div class="mt-2 pt-2 border-top">
-                                    <div class="d-flex justify-content-between small">
-                                        <span class="text-muted">Active: 1</span>
-                                        <span class="text-muted">Today: Rs. 280</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="driver-card">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                        <span class="text-white fw-bold">RS</span>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-0">Ram Singh</h6>
-                                        <small class="text-muted">9800000012</small>
-                                    </div>
-                                    <span class="badge bg-secondary">Offline</span>
                                 </div>
                                 <div class="mt-2 pt-2 border-top">
                                     <div class="d-flex justify-content-between small">
@@ -279,6 +201,11 @@
                                     </div>
                                 </div>
                             </div>
+                            @empty
+                            <div class="text-center py-4 text-muted">
+                                <small>No delivery drivers assigned</small>
+                            </div>
+                            @endforelse
                         </div>
                     </div>
                 </div>

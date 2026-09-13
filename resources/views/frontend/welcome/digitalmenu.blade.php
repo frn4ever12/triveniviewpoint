@@ -144,13 +144,80 @@
         .dm-card-name { font-weight: 600; font-size: 0.95rem; color: var(--gray-800); flex: 1; margin-right: 0.5rem; }
         .dm-card-price { font-family: var(--font-serif); font-weight: 700; font-size: 1.05rem; color: var(--primary); white-space: nowrap; }
         .dm-card-desc { font-size: 0.8rem; color: var(--gray-400); line-height: 1.5; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .dm-card-footer { display: flex; align-items: center; justify-content: flex-start; }
+        .dm-card-footer { display: flex; align-items: center; justify-content: space-between; }
         .dm-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
         .dm-tag { padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; }
         .dm-tag.veg { background: #dcfce7; color: #16a34a; }
         .dm-tag.popular { background: #fef3c7; color: #d97706; }
         .dm-no-results { text-align: center; padding: 4rem 0; color: var(--gray-400); }
         .dm-no-results i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+
+        /* Cart Button */
+        .qr-cart-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+            z-index: 1000;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .qr-cart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(220, 53, 69, 0.5);
+        }
+        .qr-cart-btn .badge {
+            background: #ffc107;
+            color: #000;
+            font-size: 0.75rem;
+        }
+
+        /* Add to Cart Button */
+        .add-to-cart-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .add-to-cart-btn:hover {
+            background: #c82333;
+        }
+
+        /* Cart Modal */
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .cart-item-qty {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cart-item-qty button {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--gray-200);
+            background: var(--gray-50);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cart-item-qty button:hover {
+            background: var(--gray-100);
+        }
 
         @media (max-width: 768px) {
             .dm-hero { padding: 2rem 0; }
@@ -177,6 +244,12 @@
             .dm-menu-name { font-size: 1rem; margin: 1rem 0 0.75rem; }
             .dm-section { padding: 1.5rem 0; }
             .dm-card { animation: none; }
+            .qr-cart-btn {
+                bottom: 15px;
+                right: 15px;
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
         }
         @media (max-width: 400px) {
             .dm-category-nav .scroll-x { gap: 0.25rem; margin-top: 0.5rem !important; }
@@ -202,6 +275,9 @@
         <div class="container dm-hero-content">
             <h1>{{ $siteName ?? 'RestaurantPro' }}</h1>
             <p>Browse our menu and discover our culinary offerings</p>
+            @if($tableRecord)
+            <p class="mt-2"><span class="badge bg-light text-dark">Table: {{ $tableRecord->name }}</span></p>
+            @endif
         </div>
     </section>
 
@@ -248,7 +324,7 @@
                             <h3 class="dm-menu-name">{{ $menuName }}</h3>
                             <div class="row g-3 mb-4">
                                 @foreach($items as $item)
-                                    <div class="col-lg-3 col-md-6 col-sm-6 menu-item" data-category="{{ $catSlug }}">
+                                    <div class="col-lg-3 col-md-6 col-sm-6 menu-item" data-category="{{ $catSlug }}" data-item-id="{{ $item->id }}" data-item-name="{{ $item->name }}" data-item-price="{{ $item->price }}">
                                         <div class="dm-card">
                                             <img src="{{ $item->getFirstMediaUrl('image') ?: asset('assets/images/defaultfood.png') }}"
                                                  alt="{{ $item->name }}" loading="lazy">
@@ -265,6 +341,9 @@
                                                         @if(($item->is_veg ?? false))<span class="dm-tag veg">Veg</span>@endif
                                                         @if(($item->is_popular ?? false))<span class="dm-tag popular">Popular</span>@endif
                                                     </div>
+                                                    <button class="add-to-cart-btn" onclick="addToCart({{ $item->id }}, '{{ $item->name }}', {{ $item->price }})">
+                                                        <i class="bi bi-plus"></i> Add
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -292,9 +371,110 @@
         </div>
     </section>
 
+    <!-- Cart Button -->
+    <button class="qr-cart-btn" onclick="showCartModal()" id="cartBtn" style="display: none;">
+        <i class="bi bi-cart3"></i> Cart <span class="badge" id="cartCount">0</span>
+    </button>
+
+    <!-- Cart Modal -->
+    <div class="modal fade" id="cartModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Your Cart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cartItems"></div>
+                    <div id="cartEmpty" class="text-center py-4">
+                        <i class="bi bi-cart-x" style="font-size: 3rem; color: var(--gray-300);"></i>
+                        <p class="mt-3 text-muted">Your cart is empty</p>
+                    </div>
+                    <div id="cartTotal" class="mt-3 pt-3 border-top" style="display: none;">
+                        <div class="d-flex justify-content-between">
+                            <strong>Total:</strong>
+                            <strong id="cartTotalAmount">Rs 0.00</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Continue Shopping</button>
+                    <button type="button" class="btn btn-primary" id="placeOrderBtn" onclick="placeOrder()" style="display: none;">Place Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Confirmation Modal -->
+    <div class="modal fade" id="orderConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-check-circle"></i> Order Placed!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                        <h4 class="mt-3">Order #<span id="orderNumber"></span></h4>
+                        <p class="text-muted">Your order has been sent to the kitchen.</p>
+                        <div id="orderDetails" class="mt-4 text-start"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary w-100" onclick="trackOrder()">Track Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Tracking Modal -->
+    <div class="modal fade" id="trackOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Track Order #<span id="trackOrderNo"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="trackOrderBody">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshOrderStatus()">Refresh Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    // Cart State
+    let cart = [];
+    let currentOrder = null;
+    let sessionToken = null;
+    let tenantSlug = '{{ request()->segment(2) }}';
+    let tableId = {{ $tableRecord->id ?? 'null' }};
+
     document.addEventListener('DOMContentLoaded', () => {
+        // Load cart from localStorage
+        const savedCart = localStorage.getItem('qrCart');
+        if (savedCart) {
+            cart = JSON.parse(savedCart);
+            updateCartUI();
+        }
+
+        // Load saved order
+        const savedOrder = localStorage.getItem('qrOrder');
+        if (savedOrder) {
+            currentOrder = JSON.parse(savedOrder);
+            sessionToken = currentOrder.session_token;
+        }
+
         // ─── Category filtering ──────────────────────────────
         const catBtns = document.querySelectorAll('.dm-cat-btn');
         const catGroups = document.querySelectorAll('.dm-category-group');
@@ -359,6 +539,271 @@
             filterItems();
         });
     });
+
+    // Cart Functions
+    function addToCart(id, name, price) {
+        const existingItem = cart.find(item => item.id === id);
+        if (existingItem) {
+            existingItem.quantity++;
+        } else {
+            cart.push({ id, name, price, quantity: 1 });
+        }
+        saveCart();
+        updateCartUI();
+        showToast('Item added to cart');
+    }
+
+    function updateCartUI() {
+        const cartBtn = document.getElementById('cartBtn');
+        const cartCount = document.getElementById('cartCount');
+        const cartItems = document.getElementById('cartItems');
+        const cartEmpty = document.getElementById('cartEmpty');
+        const cartTotal = document.getElementById('cartTotal');
+        const cartTotalAmount = document.getElementById('cartTotalAmount');
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        cartCount.textContent = totalItems;
+        cartBtn.style.display = totalItems > 0 ? 'block' : 'none';
+
+        if (cart.length === 0) {
+            cartItems.innerHTML = '';
+            cartEmpty.style.display = 'block';
+            cartTotal.style.display = 'none';
+            placeOrderBtn.style.display = 'none';
+        } else {
+            cartEmpty.style.display = 'none';
+            cartTotal.style.display = 'block';
+            placeOrderBtn.style.display = 'block';
+            cartTotalAmount.textContent = 'Rs ' + totalAmount.toFixed(2);
+
+            cartItems.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small class="text-muted">Rs ${item.price.toFixed(2)} x ${item.quantity}</small>
+                    </div>
+                    <div class="cart-item-qty">
+                        <button onclick="updateQuantity(${item.id}, -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQuantity(${item.id}, 1)">+</button>
+                        <button onclick="removeFromCart(${item.id})" class="btn btn-sm btn-outline-danger ms-2">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    function updateQuantity(id, change) {
+        const item = cart.find(item => item.id === id);
+        if (item) {
+            item.quantity += change;
+            if (item.quantity <= 0) {
+                removeFromCart(id);
+            } else {
+                saveCart();
+                updateCartUI();
+            }
+        }
+    }
+
+    function removeFromCart(id) {
+        cart = cart.filter(item => item.id !== id);
+        saveCart();
+        updateCartUI();
+    }
+
+    function saveCart() {
+        localStorage.setItem('qrCart', JSON.stringify(cart));
+    }
+
+    function showCartModal() {
+        new bootstrap.Modal(document.getElementById('cartModal')).show();
+    }
+
+    // Order Functions
+    async function placeOrder() {
+        if (!tableId) {
+            alert('Table information is required to place an order.');
+            return;
+        }
+
+        const customerName = prompt('Enter your name (optional):');
+        const customerPhone = prompt('Enter your phone number (optional):');
+        const notes = prompt('Any special instructions? (optional):');
+
+        const orderData = {
+            tenant_slug: tenantSlug,
+            table_id: tableId,
+            items: cart.map(item => ({
+                menu_item_id: item.id,
+                quantity: item.quantity,
+                unit_price: item.price,
+                size: 1
+            })),
+            customer_name: customerName || null,
+            customer_phone: customerPhone || null,
+            notes: notes || null
+        };
+
+        try {
+            const response = await fetch('/api/qr/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                sessionToken = result.session_token;
+                currentOrder = {
+                    order_no: result.order.order_no,
+                    session_token: sessionToken
+                };
+                localStorage.setItem('qrOrder', JSON.stringify(currentOrder));
+
+                // Clear cart
+                cart = [];
+                saveCart();
+                updateCartUI();
+
+                // Show confirmation
+                document.getElementById('orderNumber').textContent = result.order.order_no;
+                document.getElementById('orderDetails').innerHTML = `
+                    <p><strong>Table:</strong> {{ $tableRecord->name ?? 'N/A' }}</p>
+                    <p><strong>Items:</strong> ${result.order.items.length}</p>
+                    <p><strong>Total:</strong> Rs ${result.order.total_amount.toFixed(2)}</p>
+                `;
+
+                bootstrap.Modal.getInstance(document.getElementById('cartModal')).hide();
+                new bootstrap.Modal(document.getElementById('orderConfirmModal')).show();
+            } else {
+                alert(result.message || 'Failed to place order');
+            }
+        } catch (error) {
+            console.error('Error placing order:', error);
+            alert('Failed to place order. Please try again.');
+        }
+    }
+
+    function trackOrder() {
+        if (!currentOrder || !sessionToken) {
+            alert('No active order to track.');
+            return;
+        }
+
+        document.getElementById('trackOrderNo').textContent = currentOrder.order_no;
+        new bootstrap.Modal(document.getElementById('trackOrderModal')).show();
+        refreshOrderStatus();
+    }
+
+    async function refreshOrderStatus() {
+        if (!currentOrder || !sessionToken) return;
+
+        const trackOrderBody = document.getElementById('trackOrderBody');
+        trackOrderBody.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`/qr/track/${sessionToken}/${currentOrder.order_no}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const order = result.order;
+                const statusColors = {
+                    pending: 'warning',
+                    confirmed: 'info',
+                    preparing: 'primary',
+                    ready: 'success',
+                    served: 'success',
+                    completed: 'success',
+                    cancelled: 'danger'
+                };
+
+                trackOrderBody.innerHTML = `
+                    <div class="mb-3">
+                        <span class="badge bg-${statusColors[order.status] || 'secondary'} fs-6">
+                            ${order.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Table:</strong> ${order.table?.name || 'N/A'}</p>
+                            <p><strong>Order Type:</strong> QR Order</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Total:</strong> Rs ${order.total_amount.toFixed(2)}</p>
+                            <p><strong>Payment:</strong> ${order.payment_status.toUpperCase()}</p>
+                        </div>
+                    </div>
+                    <h6 class="mt-4 mb-3">Order Items</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(item => `
+                                    <tr>
+                                        <td>${item.menu_item?.name || 'N/A'}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>Rs ${item.total.toFixed(2)}</td>
+                                        <td><span class="badge bg-${statusColors[item.status] || 'secondary'}">${item.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                trackOrderBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        Failed to load order status.
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error tracking order:', error);
+            trackOrderBody.innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load order status. Please try again.
+                </div>
+            `;
+        }
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed bottom-0 end-0 p-3';
+        toast.style.zIndex = '1100';
+        toast.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-body">
+                    ${message}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
     </script>
 
 </body>

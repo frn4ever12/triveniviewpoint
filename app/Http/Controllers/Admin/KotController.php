@@ -18,7 +18,10 @@ class KotController extends Controller
      */
     public function index()
     {
-        $kots = KOT::with(['order.table', 'items.dish'])
+        $tenantId = auth()->user()->tenant_id;
+        $kots = KOT::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->with(['order.table', 'items.dish'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -30,8 +33,12 @@ class KotController extends Controller
      */
     public function show(KOT $kot)
     {
+        // Verify KOT belongs to current tenant
+        if ($kot->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to KOT');
+        }
         $kot->load(['order.table', 'order.waiter', 'items.dish', 'items.orderItem']);
-        
+
         return view('admin.kot.show', compact('kot'));
     }
 
@@ -41,14 +48,18 @@ class KotController extends Controller
     public function reprintKOT(Request $request, $kotId)
     {
         try {
-            $kot = KOT::with(['items.dish', 'order.table'])->findOrFail($kotId);
-            
+            $tenantId = auth()->user()->tenant_id;
+            $kot = KOT::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['items.dish', 'order.table'])
+                ->findOrFail($kotId);
+
             // Track reprint in remarks
             $currentRemarks = $kot->remarks ? $kot->remarks . ' | ' : '';
             $kot->update([
                 'remarks' => $currentRemarks . 'Reprinted at: ' . now()->format('Y-m-d H:i:s')
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'KOT reprinted successfully',
@@ -69,7 +80,7 @@ class KotController extends Controller
                     'status' => $kot->status
                 ]
             ]);
-            
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
@@ -87,46 +98,51 @@ class KotController extends Controller
             'status' => 'required|in:pending,sent,preparing,ready,served,cancelled'
         ]);
 
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
-            $kot = KOT::with(['items.orderItem', 'order'])->findOrFail($kotId);
+            $kot = KOT::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['items.orderItem', 'order'])
+                ->findOrFail($kotId);
             $oldStatus = $kot->status;
-            
+
             $kot->update(['status' => $request->status]);
-            
+
             // If marking as sent, update sent_at timestamp
             if ($request->status === 'sent' && !$kot->sent_at) {
                 $kot->update(['sent_at' => now()]);
             }
-            
+
             // Update related order item statuses based on KOT status
             if (in_array($request->status, ['preparing', 'ready', 'served'])) {
                 $newItemStatus = match($request->status) {
                     'preparing' => 'preparing',
-                    'ready' => 'ready', 
+                    'ready' => 'ready',
                     'served' => 'served',
                     default => 'pending'
                 };
-                
+
                 foreach ($kot->items as $kotItem) {
                     if ($kotItem->orderItem) {
                         $kotItem->orderItem->update(['status' => $newItemStatus]);
                     }
                 }
-                
+
                 // Update overall order status
                 $this->updateOrderStatus($kot->order);
             }
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "KOT status updated from {$oldStatus} to {$request->status}",
                 'kot' => $kot->fresh(['items.dish', 'order.table']),
                 'order_status' => $kot->order->fresh()->status,
             ]);
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -141,10 +157,15 @@ class KotController extends Controller
      */
     public function toggleOrderItemStatus(Request $request, $itemId)
     {
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
-            $orderItem = OrderItem::with(['dish', 'order.table', 'kot'])->findOrFail($itemId);
-            
+            $orderItem = OrderItem::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['dish', 'order.table', 'kot'])
+                ->findOrFail($itemId);
+
             // Define status progression: pending -> preparing -> ready -> served
             $statusProgression = [
                 'pending' => 'preparing',
@@ -152,22 +173,22 @@ class KotController extends Controller
                 'ready' => 'served',
                 'served' => 'served' // Can't go beyond served
             ];
-            
+
             $currentStatus = $orderItem->status ?? 'pending';
             $newStatus = $statusProgression[$currentStatus] ?? 'preparing';
-            
+
             $orderItem->update(['status' => $newStatus]);
-            
+
             // Update KOT status based on all its items
             if ($orderItem->kot) {
                 $this->updateKOTStatusBasedOnItems($orderItem->kot);
             }
-            
+
             // Update overall order status
             $this->updateOrderStatus($orderItem->order);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "Item status updated from {$currentStatus} to {$newStatus}",
@@ -175,7 +196,7 @@ class KotController extends Controller
                 'kot_status' => $orderItem->kot ? $orderItem->kot->fresh()->status : null,
                 'order_status' => $orderItem->order->fresh()->status,
             ]);
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -194,23 +215,28 @@ class KotController extends Controller
             'status' => 'required|in:pending,preparing,ready,served'
         ]);
 
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
-            $orderItem = OrderItem::with(['dish', 'order.table', 'kot'])->findOrFail($itemId);
+            $orderItem = OrderItem::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['dish', 'order.table', 'kot'])
+                ->findOrFail($itemId);
             $oldStatus = $orderItem->status ?? 'pending';
-            
+
             $orderItem->update(['status' => $request->status]);
-            
+
             // Update KOT status based on all its items
             if ($orderItem->kot) {
                 $this->updateKOTStatusBasedOnItems($orderItem->kot);
             }
-            
+
             // Update overall order status
             $this->updateOrderStatus($orderItem->order);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "Item status updated from {$oldStatus} to {$request->status}",
@@ -218,7 +244,7 @@ class KotController extends Controller
                 'kot_status' => $orderItem->kot ? $orderItem->kot->fresh()->status : null,
                 'order_status' => $orderItem->order->fresh()->status,
             ]);
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -233,32 +259,37 @@ class KotController extends Controller
      */
     public function markKOTReady(Request $request, $kotId)
     {
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
-            $kot = KOT::with(['items.orderItem', 'order'])->findOrFail($kotId);
-            
+            $kot = KOT::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['items.orderItem', 'order'])
+                ->findOrFail($kotId);
+
             // Update all order items to ready status
             foreach ($kot->items as $kotItem) {
                 if ($kotItem->orderItem && $kotItem->orderItem->status !== 'served') {
                     $kotItem->orderItem->update(['status' => 'ready']);
                 }
             }
-            
+
             // Update KOT status to ready
             $kot->update(['status' => 'ready']);
-            
+
             // Update overall order status
             $this->updateOrderStatus($kot->order);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'All items marked as ready',
                 'kot' => $kot->fresh(['items.dish', 'items.orderItem']),
                 'order_status' => $kot->order->fresh()->status,
             ]);
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -273,32 +304,37 @@ class KotController extends Controller
      */
     public function markKOTServed(Request $request, $kotId)
     {
+        $tenantId = auth()->user()->tenant_id;
+
         DB::beginTransaction();
         try {
-            $kot = KOT::with(['items.orderItem', 'order'])->findOrFail($kotId);
-            
+            $kot = KOT::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['items.orderItem', 'order'])
+                ->findOrFail($kotId);
+
             // Update all order items to served status
             foreach ($kot->items as $kotItem) {
                 if ($kotItem->orderItem) {
                     $kotItem->orderItem->update(['status' => 'served']);
                 }
             }
-            
+
             // Update KOT status to served
             $kot->update(['status' => 'served']);
-            
+
             // Update overall order status
             $this->updateOrderStatus($kot->order);
-            
+
             DB::commit();
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'All items marked as served',
                 'kot' => $kot->fresh(['items.dish', 'items.orderItem']),
                 'order_status' => $kot->order->fresh()->status,
             ]);
-            
+
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -314,8 +350,12 @@ class KotController extends Controller
     public function getKOTForPrint($kotId)
     {
         try {
-            $kot = KOT::with(['items.dish', 'order.table', 'order.waiter'])->findOrFail($kotId);
-            
+            $tenantId = auth()->user()->tenant_id;
+            $kot = KOT::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->with(['items.dish', 'order.table', 'order.waiter'])
+                ->findOrFail($kotId);
+
             return response()->json([
                 'success' => true,
                 'kot' => [
@@ -343,7 +383,7 @@ class KotController extends Controller
                     ]
                 ]
             ]);
-            
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,

@@ -24,7 +24,9 @@ class SupplierController extends Controller
     {
         DB::beginTransaction();
         try {
-            Supplier::create($request->validated());
+            $data = $request->validated();
+            $data['tenant_id'] = auth()->user()->tenant_id;
+            Supplier::create($data);
             DB::commit();
             return redirect()->route('admin.suppliers.index')
                 ->with('success', 'Supplier created successfully.');
@@ -37,16 +39,28 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
+        // Verify supplier belongs to current tenant
+        if ($supplier->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to supplier');
+        }
         return view('admin.supplier.show', compact('supplier'));
     }
 
     public function edit(Supplier $supplier)
     {
+        // Verify supplier belongs to current tenant
+        if ($supplier->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to supplier');
+        }
         return view('admin.supplier.edit', compact('supplier'));
     }
 
     public function update(SupplierRequest $request, Supplier $supplier)
     {
+        // Verify supplier belongs to current tenant
+        if ($supplier->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to supplier');
+        }
         DB::beginTransaction();
         try {
             $supplier->update($request->validated());
@@ -62,6 +76,10 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
+        // Verify supplier belongs to current tenant
+        if ($supplier->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to supplier');
+        }
         DB::beginTransaction();
         try {
             $supplier->delete();

@@ -30,6 +30,7 @@ class userController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->validated();
+            $data['tenant_id'] = auth()->user()->tenant_id;
             $data['password'] = Hash::make($data['password']);
 
             $user = User::create($data);
@@ -50,11 +51,19 @@ class userController extends Controller
 
     public function show(User $user)
     {
+        // Verify user belongs to current tenant
+        if ($user->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to user');
+        }
         return view('admin.user.show', compact('user'));
     }
 
     public function edit(User $user)
     {
+        // Verify user belongs to current tenant
+        if ($user->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to user');
+        }
         $user->load('roles');
         $roles = Role::where('name', '!=', 'superadmin')->pluck('name');
         return view('admin.user.edit', compact('user', 'roles'));
@@ -62,6 +71,10 @@ class userController extends Controller
 
     public function update(UserRequest $request, User $user)
     {
+        // Verify user belongs to current tenant
+        if ($user->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to user');
+        }
         $data = $request->validated();
 
         if (!empty($data['password'])) {
@@ -90,6 +103,10 @@ class userController extends Controller
 
     public function destroy(User $user)
     {
+        // Verify user belongs to current tenant
+        if ($user->tenant_id != auth()->user()->tenant_id) {
+            abort(403, 'Unauthorized access to user');
+        }
         DB::beginTransaction();
         try {
             $user->delete();

@@ -321,10 +321,12 @@ function addToCart(dishId, dishName, price, image) {
     if (idx > -1) {
         POS.cart[idx].quantity += 1;
     } else {
+        const defaultImage = '/assets/images/defaultfood.png';
+        const validImage = (image && image !== 'null' && image !== '') ? image : defaultImage;
         POS.cart.push({
             id: dishId, name: dishName, basePrice: parseFloat(price),
             quantity: 1, size: defaultSize,
-            image: image || 'https://via.placeholder.com/48?text=Item'
+            image: validImage
         });
     }
     playAddSound();
@@ -407,9 +409,12 @@ function updateCartDisplay() {
         totalQty += item.quantity;
         totalAmt += itemTotal;
 
+        const defaultImage = '/assets/images/defaultfood.png';
+        const itemImage = (item.image && item.image !== 'null' && item.image !== '') ? item.image : defaultImage;
+
         html += `
             <div class="pos-cart-item">
-                <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" class="pos-cart-item-img">
+                <img src="${escapeHtml(itemImage)}" alt="${escapeHtml(item.name)}" class="pos-cart-item-img">
                 <div class="pos-cart-item-body">
                     <div class="pos-cart-item-name">${escapeHtml(item.name)}</div>
                     <div class="pos-cart-item-price">Rs ${itemTotal.toFixed(2)}</div>
@@ -557,26 +562,11 @@ async function confirmOrder() {
 }
 
 function showOrderConfirmation(order) {
-    const d = POS.dom;
-    if (d.orderDetails) {
-        d.orderDetails.textContent = `Order #${order.order_no} confirmed successfully!`;
-    }
-
-    if (POS.currentOrderMode === 'dine_in' && d.checkoutBtn && order.table_id) {
-        d.checkoutBtn.href = '/admin/orders/table/' + order.table_id + '/checkout';
-        d.checkoutBtn.style.display = 'inline-block';
-        if (d.quickCheckoutBtn) d.quickCheckoutBtn.style.display = 'none';
-    } else {
-        const qBtn = d.quickCheckoutBtn;
-        if (qBtn && order.id) {
-            qBtn.onclick = () => window.location.href = '/admin/orders/' + order.id + '/checkout';
-            qBtn.style.display = 'inline-block';
-        }
-        if (d.checkoutBtn) d.checkoutBtn.style.display = 'none';
-    }
-
-    const modal = new bootstrap.Modal(document.getElementById('orderConfirmModal'));
-    modal.show();
+    // Show success alert then redirect
+    showToast('success', `Order #${order.order_no} confirmed successfully!`);
+    setTimeout(() => {
+        window.location.href = '/admin/orders';
+    }, 1500);
 }
 
 function startNewOrder() {
@@ -944,9 +934,11 @@ function displayOngoingOrders(tables) {
             </div>`;
         });
 
-        html += `<div class="d-flex gap-2 mt-3">
+        html += `<div class="d-flex gap-2 mt-3 flex-wrap">
             <a href="/admin/orders/table/${table.id}/edit" class="pos-btn pos-btn-sm pos-btn-primary" style="text-decoration:none;">Add Items</a>
             <a href="/admin/orders/table/${table.id}/checkout" class="pos-btn pos-btn-sm pos-btn-success" style="text-decoration:none;">Checkout</a>
+            ${table.orders.map(o => `<button class="pos-btn pos-btn-sm pos-btn-modal-bill" onclick="printOrderBillForOrder(${o.id})">Print Bill</button>`).join('')}
+            ${table.orders.map(o => `<button class="pos-btn pos-btn-sm pos-btn-modal-kot" onclick="printKotForOrder(${o.id})">Print KOT</button>`).join('')}
             ${table.orders.map(o => `<button class="pos-btn pos-btn-sm pos-btn-warning" onclick="cancelPOSOrder(${o.id})">Cancel</button>`).join('')}
         </div></div>`;
     });
@@ -976,6 +968,50 @@ function cancelPOSOrder(orderId) {
         }
     })
     .catch(() => showToast('error', 'Failed to cancel order'));
+}
+
+async function printOrderBillForOrder(orderId) {
+    try {
+        const resp = await fetch('/admin/orders/' + orderId + '/bill', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await resp.json();
+        if (data.success && data.html) {
+            const pw = window.open('', '_blank', 'width=420,height=600');
+            pw.document.write(data.html);
+            pw.document.close();
+            pw.onload = function() {
+                pw.print();
+                pw.onafterprint = function() { pw.close(); };
+            };
+        } else {
+            showToast('error', 'Failed to load bill');
+        }
+    } catch (err) {
+        showToast('error', 'Failed to print bill');
+    }
+}
+
+async function printKotForOrder(orderId) {
+    try {
+        const resp = await fetch('/admin/orders/' + orderId + '/kot', {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await resp.json();
+        if (data.success && data.html) {
+            const pw = window.open('', '_blank', 'width=420,height=600');
+            pw.document.write(data.html);
+            pw.document.close();
+            pw.onload = function() {
+                pw.print();
+                pw.onafterprint = function() { pw.close(); };
+            };
+        } else {
+            showToast('error', 'Failed to load KOT');
+        }
+    } catch (err) {
+        showToast('error', 'Failed to print KOT');
+    }
 }
 
 function deletePOSOrder(orderId) {

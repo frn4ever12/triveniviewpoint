@@ -50,7 +50,6 @@ class TableDataTable extends DataTable
     public function query(Table $model): QueryBuilder
     {
         return $model->newQuery()
-            
             ->select([
                 'id', 'name', 'capacity','status'
             ]);

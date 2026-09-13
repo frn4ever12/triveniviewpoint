@@ -42,6 +42,33 @@
                             </div>
                         </div>
                         @endif
+
+                        @if(isset($tenant) && isset($tables))
+                        <div class="col-12 mt-4">
+                            <div class="card shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Table-Specific QR Codes for Ordering</h5>
+                                    <p class="small text-muted mb-3">Generate QR codes for each table to enable customer ordering</p>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <select id="tableSelect" class="form-select form-select-sm mb-3">
+                                                <option value="">Select a table...</option>
+                                                @foreach($tables as $table)
+                                                    <option value="{{ $table->id }}">{{ $table->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button class="btn btn-sm btn-primary w-100" onclick="generateTableQr()">
+                                                <i class="bi bi-qr-code"></i> Generate QR
+                                            </button>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div id="tableQrContainer" class="text-center py-3"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                     </div>
 
                     <div class="digital-steps mt-4">
@@ -100,6 +127,53 @@
         width: 180,
         height: 180
     });
+
+    // Generate Table QR Codes
+    function generateTableQr() {
+        const tableId = document.getElementById('tableSelect').value;
+        if (!tableId) {
+            alert('Please select a table first');
+            return;
+        }
+
+        const container = document.getElementById('tableQrContainer');
+        container.innerHTML = '';
+
+        const tableMenuUrl = `{{ route('digitalmenu-table', ['slug' => $tenant->slug]) }}/${tableId}`;
+
+        const qrDiv = document.createElement('div');
+        qrDiv.id = `tableQr-${tableId}`;
+        qrDiv.style.display = 'inline-block';
+        container.appendChild(qrDiv);
+
+        new QRCode(qrDiv, {
+            text: tableMenuUrl,
+            width: 150,
+            height: 150,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'btn btn-sm btn-outline-primary mt-2 ms-2';
+        downloadBtn.innerHTML = '<i class="bi bi-download"></i> Download';
+        downloadBtn.onclick = () => downloadTableQr(tableId);
+        container.appendChild(downloadBtn);
+    }
+
+    function downloadTableQr(tableId) {
+        const qrCanvas = document.querySelector(`#tableQr-${tableId} canvas`);
+        if (qrCanvas) {
+            const tableName = document.getElementById('tableSelect').options[document.getElementById('tableSelect').selectedIndex].text;
+            const link = document.createElement('a');
+            link.download = `qr-menu-{{ $tenant->slug }}-${tableName.replace(/\s+/g, '-').toLowerCase()}.png`;
+            link.href = qrCanvas.toDataURL('image/png');
+            link.click();
+        }
+    }
+
+    window.generateTableQr = generateTableQr;
     @endif
 </script>
 

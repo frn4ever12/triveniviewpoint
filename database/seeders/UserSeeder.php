@@ -17,6 +17,7 @@ class UserSeeder extends Seeder
                 'phone' => '9800000000',
                 'password' => Hash::make('Admin@123'),
                 'status' => 'active',
+                'tenant_id' => 1,
             ]
         );
         $superAdmin->assignRole('superadmin');
@@ -28,6 +29,7 @@ class UserSeeder extends Seeder
                 'phone' => '9800000001',
                 'password' => Hash::make('Admin@123'),
                 'status' => 'active',
+                'tenant_id' => 1,
             ]
         );
         $admin->assignRole('admin');
@@ -39,6 +41,7 @@ class UserSeeder extends Seeder
                 'phone' => '9800000002',
                 'password' => Hash::make('Admin@123'),
                 'status' => 'active',
+                'tenant_id' => 1,
             ]
         );
         $chef->assignRole('chef');
@@ -50,6 +53,7 @@ class UserSeeder extends Seeder
                 'phone' => '9800000003',
                 'password' => Hash::make('Admin@123'),
                 'status' => 'active',
+                'tenant_id' => 1,
             ]
         );
         $waiter->assignRole('waiter');
@@ -61,6 +65,7 @@ class UserSeeder extends Seeder
                 'phone' => '9800000004',
                 'password' => Hash::make('Admin@123'),
                 'status' => 'active',
+                'tenant_id' => 1,
             ]
         );
         $cashier->assignRole('cashier');

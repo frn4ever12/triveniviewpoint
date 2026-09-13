@@ -14,14 +14,18 @@ class TableSeeder extends Seeder
     public function run(): void
     {
         $datas=[
-            ['name'=>'Table-1', 'status'=>'available'],
-            ['name'=>'Table-2', 'status'=>'available'],
-            ['name'=>'Table-3', 'status'=>'available'],
-            ['name'=>'Table-4', 'status'=>'available'],
-            ['name'=>'Table-5', 'status'=>'available'],
-            ['name'=>'Table-6', 'status'=>'available'],
-            ['name'=>'Table-7', 'status'=>'available'],
-            ['name'=>'Table-8', 'status'=>'available'],
+            ['name'=>'Table-1', 'capacity'=>4, 'table_type'=>'indoor', 'location'=>'ground floor', 'status'=>'available'],
+            ['name'=>'Table-2', 'capacity'=>4, 'table_type'=>'indoor', 'location'=>'ground floor', 'status'=>'available'],
+            ['name'=>'Table-3', 'capacity'=>6, 'table_type'=>'indoor', 'location'=>'ground floor', 'status'=>'available'],
+            ['name'=>'Table-4', 'capacity'=>6, 'table_type'=>'indoor', 'location'=>'ground floor', 'status'=>'available'],
+            ['name'=>'Table-5', 'capacity'=>4, 'table_type'=>'indoor', 'location'=>'first floor', 'status'=>'available'],
+            ['name'=>'Table-6', 'capacity'=>4, 'table_type'=>'indoor', 'location'=>'first floor', 'status'=>'available'],
+            ['name'=>'Table-7', 'capacity'=>8, 'table_type'=>'family', 'location'=>'first floor', 'status'=>'available'],
+            ['name'=>'Table-8', 'capacity'=>8, 'table_type'=>'family', 'location'=>'first floor', 'status'=>'available'],
+            ['name'=>'Table-9', 'capacity'=>2, 'table_type'=>'couple', 'location'=>'terrace', 'status'=>'available'],
+            ['name'=>'Table-10', 'capacity'=>2, 'table_type'=>'couple', 'location'=>'terrace', 'status'=>'available'],
+            ['name'=>'Table-11', 'capacity'=>10, 'table_type'=>'party', 'location'=>'private room', 'status'=>'available'],
+            ['name'=>'Table-12', 'capacity'=>12, 'table_type'=>'party', 'location'=>'private room', 'status'=>'available'],
         ];
         foreach ($datas as $data) {
             \App\Models\Table::updateOrCreate(

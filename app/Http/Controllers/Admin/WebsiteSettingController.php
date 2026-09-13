@@ -33,6 +33,11 @@ class WebsiteSettingController extends Controller
         
         $data = $request->validated();
         
+        // Ensure tenant_id is set
+        if (!$setting->tenant_id && auth()->check()) {
+            $data['tenant_id'] = auth()->user()->tenant_id;
+        }
+        
         if ($request->hasFile('logo_path')) {
             $setting->clearMediaCollection('logo');
             
@@ -61,7 +66,15 @@ class WebsiteSettingController extends Controller
     public function updateContact(WebsiteContactRequest $request)
     {
         $setting = WebsiteSetting::getSettings();
-        $setting->update($request->validated());
+        
+        $data = $request->validated();
+        
+        // Ensure tenant_id is set
+        if (!$setting->tenant_id && auth()->check()) {
+            $data['tenant_id'] = auth()->user()->tenant_id;
+        }
+        
+        $setting->update($data);
         WebsiteSettingService::clearCache();
         
         $redirectRoute = request()->routeIs('superadmin.*') ? 'superadmin.website.edit' : 'admin.website.edit';
@@ -75,7 +88,15 @@ class WebsiteSettingController extends Controller
     public function updateSocial(WebsiteSocialRequest $request)
     {
         $setting = WebsiteSetting::getSettings();
-        $setting->update($request->validated());
+        
+        $data = $request->validated();
+        
+        // Ensure tenant_id is set
+        if (!$setting->tenant_id && auth()->check()) {
+            $data['tenant_id'] = auth()->user()->tenant_id;
+        }
+        
+        $setting->update($data);
         WebsiteSettingService::clearCache();
         
         $redirectRoute = request()->routeIs('superadmin.*') ? 'superadmin.website.edit' : 'admin.website.edit';
@@ -89,7 +110,15 @@ class WebsiteSettingController extends Controller
     public function updateSeo(WebsiteSeoRequest $request)
     {
         $setting = WebsiteSetting::getSettings();
-        $setting->update($request->validated());
+        
+        $data = $request->validated();
+        
+        // Ensure tenant_id is set
+        if (!$setting->tenant_id && auth()->check()) {
+            $data['tenant_id'] = auth()->user()->tenant_id;
+        }
+        
+        $setting->update($data);
         WebsiteSettingService::clearCache();
         
         $redirectRoute = request()->routeIs('superadmin.*') ? 'superadmin.website.edit' : 'admin.website.edit';
@@ -121,6 +150,11 @@ class WebsiteSettingController extends Controller
             'logo_path' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'favicon_path' => ['nullable', 'image', 'mimes:ico,png,jpg,gif', 'max:1024'],
         ]);
+        
+        // Ensure tenant_id is set
+        if (!$setting->tenant_id && auth()->check()) {
+            $data['tenant_id'] = auth()->user()->tenant_id;
+        }
         
         if ($request->hasFile('logo_path')) {
             $setting->clearMediaCollection('logo');

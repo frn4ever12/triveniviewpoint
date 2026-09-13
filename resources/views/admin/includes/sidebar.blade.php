@@ -11,7 +11,7 @@
     }
 @endphp
 
-<nav class="navbar-vertical navbar bg-danger">
+<nav class="navbar-vertical navbar" style="background: var(--sidebar);">
     <div>
         <a class="navbar-brand" href="{{ route('dashboard') }}">
             <span>{{ auth()->user()?->tenant?->name ?? $siteName ?? 'Restaurant' }}</span>
@@ -125,27 +125,27 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}">
-                                Items
+                                <i data-feather="package" class="nav-icon icon-xs me-2"></i> Items
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.reports.stock_report') ? 'active' : '' }}" href="{{ route('admin.reports.stock_report') }}">
-                                Stock Report
+                                <i data-feather="file-text" class="nav-icon icon-xs me-2"></i> Stock Report
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.stock-adjustments.*') ? 'active' : '' }}" href="{{ route('admin.stock-adjustments.index') }}">
-                                Stock Adjustments
+                                <i data-feather="refresh-cw" class="nav-icon icon-xs me-2"></i> Stock Adjustments
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.wastages.*') ? 'active' : '' }}" href="{{ route('admin.wastages.index') }}">
-                                Wastage
+                                <i data-feather="trash-2" class="nav-icon icon-xs me-2"></i> Wastage
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.kitchen-consumptions.*') ? 'active' : '' }}" href="{{ route('admin.kitchen-consumptions.index') }}">
-                                Kitchen Consumption
+                                <i data-feather="zap" class="nav-icon icon-xs me-2"></i> Kitchen Consumption
                             </a>
                         </li>
                     </ul>
@@ -189,32 +189,32 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link has-arrow" href="{{ route('admin.reports.purchase_report') }}">
-                                Purchase Report
+                                <i data-feather="shopping-bag" class="nav-icon icon-xs me-2"></i> Purchase Report
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow" href="{{ route('admin.reports.sales_report') }}">
-                                Monthly Sales Report
+                                <i data-feather="trending-up" class="nav-icon icon-xs me-2"></i> Monthly Sales Report
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow" href="{{ route('admin.reports.stock_report') }}">
-                                Stock Report
+                                <i data-feather="package" class="nav-icon icon-xs me-2"></i> Stock Report
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow" href="{{ route('admin.reports.expense_report') }}">
-                                Expense Report
+                                <i data-feather="dollar-sign" class="nav-icon icon-xs me-2"></i> Expense Report
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow" href="{{ route('admin.reports.profit_loss_report') }}">
-                                P&L Report
+                                <i data-feather="pie-chart" class="nav-icon icon-xs me-2"></i> P&L Report
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link has-arrow {{ request()->routeIs('admin.reports.financial_track') ? 'active' : '' }}" href="{{ route('admin.reports.financial_track') }}">
-                                Financial Track
+                                <i data-feather="bar-chart" class="nav-icon icon-xs me-2"></i> Financial Track
                             </a>
                         </li>
                     </ul>
