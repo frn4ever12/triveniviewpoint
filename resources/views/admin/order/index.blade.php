@@ -2408,6 +2408,3 @@
     document.addEventListener('DOMContentLoaded', () => loadRecentOrders());
 </script>
 @endpush
-    document.addEventListener('DOMContentLoaded', () => loadRecentOrders());
-</script>
-@endpush
