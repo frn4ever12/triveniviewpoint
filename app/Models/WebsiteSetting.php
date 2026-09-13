@@ -65,8 +65,32 @@ class WebsiteSetting extends Model implements HasMedia
      */
     public static function getSettings()
     {
-        $tenantId = auth()->check() ? auth()->user()->tenant_id : null;
-        return static::withoutGlobalScopes()->where('tenant_id', $tenantId)->first() ?? static::create(['tenant_id' => $tenantId]);
+        try {
+            // Priority: auth user > session tenant > default (no tenant)
+            $tenantId = null;
+            
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $tenantId = auth()->user()->tenant_id;
+            } elseif (session('current_tenant_id')) {
+                $tenantId = session('current_tenant_id');
+            }
+            
+            // If tenant_id column doesn't exist (production not migrated yet), return first record
+            if (!Schema::hasColumn('website_settings', 'tenant_id')) {
+                return static::first() ?? static::create([]);
+            }
+            
+            // If no tenant context, return default settings without tenant_id
+            if (!$tenantId) {
+                return static::withoutGlobalScopes()->whereNull('tenant_id')->first() ?? static::create(['tenant_id' => null]);
+            }
+            
+            return static::withoutGlobalScopes()->where('tenant_id', $tenantId)->first() ?? static::create(['tenant_id' => $tenantId]);
+        } catch (\Exception $e) {
+            \Log::error('WebsiteSetting::getSettings failed: ' . $e->getMessage());
+            // Return first record as fallback
+            return static::first() ?? static::create([]);
+        }
     }
 
     /**

@@ -12,9 +12,18 @@ class WebsiteSettingService
      */
     public static function getSettings(): WebsiteSetting
     {
-        return Cache::remember('website_settings', 3600, function () {
-            return WebsiteSetting::getSettings();
-        });
+        try {
+            return Cache::remember('website_settings', 3600, function () {
+                return WebsiteSetting::getSettings();
+            });
+        } catch (\Exception $e) {
+            \Log::error('WebsiteSettingService::getSettings failed: ' . $e->getMessage());
+            // Return a default settings object
+            return new WebsiteSetting([
+                'site_name' => 'dmcrestro',
+                'copyright' => date('Y'),
+            ]);
+        }
     }
 
     /**
