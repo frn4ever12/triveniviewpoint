@@ -28,6 +28,7 @@ return new class extends Migration
             'invoices',
             'rooms',
             'stock_usages',
+            'website_settings',
         ];
 
         foreach ($tables as $tableName) {
@@ -63,6 +64,7 @@ return new class extends Migration
             'invoices',
             'rooms',
             'stock_usages',
+            'website_settings',
         ];
 
         foreach ($tables as $tableName) {
