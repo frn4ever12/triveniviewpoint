@@ -552,6 +552,7 @@
 
     // Cart Functions
     function addToCart(id, name, price) {
+        console.log('addToCart called:', { id, name, price });
         const existingItem = cart.find(item => item.id === id);
         if (existingItem) {
             existingItem.quantity++;
@@ -562,6 +563,9 @@
         updateCartUI();
         showToast('Item added to cart');
     }
+
+    // Make function globally accessible
+    window.addToCart = addToCart;
 
     function updateCartUI() {
         const cartBtn = document.getElementById('cartBtn');
@@ -632,8 +636,11 @@
     }
 
     function showCartModal() {
+        console.log('showCartModal called');
         new bootstrap.Modal(document.getElementById('cartModal')).show();
     }
+
+    window.showCartModal = showCartModal;
 
     // Order Functions
     async function placeOrder() {
@@ -667,6 +674,7 @@
 
         try {
             console.log('Placing order with data:', orderData);
+            
             const response = await fetch('/api/qr/order', {
                 method: 'POST',
                 headers: {
@@ -677,6 +685,14 @@
             });
 
             console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Response not OK:', errorText);
+                alert(`Server error: ${response.status} - ${errorText}`);
+                return;
+            }
+
             const result = await response.json();
             console.log('Response data:', result);
 
