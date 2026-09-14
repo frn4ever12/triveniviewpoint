@@ -20,7 +20,16 @@ class NepaliMenuItemSeeder extends Seeder
             return;
         }
 
-        $categories = Category::all()->keyBy('slug');
+        // Define required categories for Nepali menu
+        $requiredCategories = [
+            ['name' => 'Momo', 'slug' => 'momo'],
+            ['name' => 'Chowmein', 'slug' => 'chowmein'],
+            ['name' => 'Pakauda', 'slug' => 'pakauda'],
+            ['name' => 'Samosa', 'slug' => 'samosa'],
+            ['name' => 'Nepali Thali', 'slug' => 'nepali-thali'],
+            ['name' => 'Nepali Snacks', 'slug' => 'nepali-snacks'],
+            ['name' => 'Tandoori', 'slug' => 'tandoori'],
+        ];
 
         $menuItems = [
             // Momo Items
@@ -394,11 +403,31 @@ class NepaliMenuItemSeeder extends Seeder
         foreach ($tenants as $tenant) {
             $this->command->info("Seeding menu items for tenant: {$tenant->name}");
             
+            // Create required categories for this tenant if they don't exist
+            $tenantCategories = [];
+            foreach ($requiredCategories as $catData) {
+                $category = Category::firstOrCreate(
+                    [
+                        'slug' => $catData['slug'],
+                        'tenant_id' => $tenant->id,
+                    ],
+                    [
+                        'tenant_id' => $tenant->id,
+                        'name' => $catData['name'],
+                        'slug' => $catData['slug'],
+                        'description' => "Nepali {$catData['name']} items",
+                        'status' => CommonStatusEnum::ACTIVE,
+                    ]
+                );
+                $tenantCategories[$catData['slug']] = $category;
+            }
+            $this->command->info("Seeding menu items for tenant: {$tenant->name}");
+            
             foreach ($menuItems as $itemData) {
-                $category = $categories->get($itemData['category_slug']);
+                $category = $tenantCategories[$itemData['category_slug']] ?? null;
                 
                 if (!$category) {
-                    $this->command->warn("Category not found: {$itemData['category_slug']}");
+                    $this->command->warn("Category not found for tenant {$tenant->id}: {$itemData['category_slug']}");
                     continue;
                 }
 
