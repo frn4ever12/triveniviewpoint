@@ -12,6 +12,14 @@ class NepaliMenuItemSeeder extends Seeder
 {
     public function run(): void
     {
+        // Get all tenants to seed menu items for each tenant
+        $tenants = \App\Models\Tenant::all();
+        
+        if ($tenants->isEmpty()) {
+            $this->command->warn('No tenants found. Please run TenantSeeder first.');
+            return;
+        }
+
         $categories = Category::all()->keyBy('slug');
 
         $menuItems = [
@@ -383,38 +391,45 @@ class NepaliMenuItemSeeder extends Seeder
 
         $defaultImagePath = public_path('assets/images/defaultfood.png');
 
-        foreach ($menuItems as $itemData) {
-            $category = $categories->get($itemData['category_slug']);
+        foreach ($tenants as $tenant) {
+            $this->command->info("Seeding menu items for tenant: {$tenant->name}");
             
-            if (!$category) {
-                $this->command->warn("Category not found: {$itemData['category_slug']}");
-                continue;
-            }
+            foreach ($menuItems as $itemData) {
+                $category = $categories->get($itemData['category_slug']);
+                
+                if (!$category) {
+                    $this->command->warn("Category not found: {$itemData['category_slug']}");
+                    continue;
+                }
 
-            $menuItem = MenuItem::updateOrCreate(
-                ['slug' => $itemData['slug']],
-                [
-                    'tenant_id' => 1,
-                    'name' => $itemData['name'],
-                    'slug' => $itemData['slug'],
-                    'category_id' => $category->id,
-                    'description' => $itemData['description'],
-                    'ingredients' => $itemData['ingredients'],
-                    'price' => $itemData['price'],
-                    'cost_price' => $itemData['cost_price'],
-                    'final_price' => $itemData['price'],
-                    'is_vegetarian' => $itemData['is_vegetarian'],
-                    'is_featured' => $itemData['is_featured'],
-                    'preparation_time' => $itemData['preparation_time'],
-                    'status' => $itemData['status'],
-                ]
-            );
+                $menuItem = MenuItem::updateOrCreate(
+                    [
+                        'slug' => $itemData['slug'],
+                        'tenant_id' => $tenant->id,
+                    ],
+                    [
+                        'tenant_id' => $tenant->id,
+                        'name' => $itemData['name'],
+                        'slug' => $itemData['slug'],
+                        'category_id' => $category->id,
+                        'description' => $itemData['description'],
+                        'ingredients' => $itemData['ingredients'],
+                        'price' => $itemData['price'],
+                        'cost_price' => $itemData['cost_price'],
+                        'final_price' => $itemData['price'],
+                        'is_vegetarian' => $itemData['is_vegetarian'],
+                        'is_featured' => $itemData['is_featured'],
+                        'preparation_time' => $itemData['preparation_time'],
+                        'status' => $itemData['status'],
+                    ]
+                );
 
-            // Add default image if media doesn't exist
-            if ($menuItem && !$menuItem->hasMedia('image') && file_exists($defaultImagePath)) {
-                $menuItem->addMedia($defaultImagePath)
-                    ->preservingOriginal()
-                    ->toMediaCollection('image');
+                // Add default image if media doesn't exist
+                if ($menuItem && !$menuItem->hasMedia('image') && file_exists($defaultImagePath)) {
+                    $menuItem->addMedia($defaultImagePath)
+                        ->preservingOriginal()
+                        ->toMediaCollection('image');
+                }
             }
         }
 
