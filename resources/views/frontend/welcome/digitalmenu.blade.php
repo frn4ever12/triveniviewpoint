@@ -459,6 +459,16 @@
     let sessionToken = null;
     let tenantSlug = '{{ $tenant->slug ?? request()->segment(2) ?? '' }}';
     let tableId = {{ $tableRecord->id ?? 'null' }};
+    let tableName = '{{ $tableRecord->name ?? 'Unknown' }}';
+
+    // Debug logging
+    console.log('Digital Menu initialized:', {
+        tenantSlug,
+        tableId,
+        tableName,
+        hasTenant: !!{{ isset($tenant) ? 'true' : 'false' }},
+        hasTable: !!{{ isset($tableRecord) ? 'true' : 'false' }}
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         // Load cart from localStorage
@@ -628,7 +638,12 @@
     // Order Functions
     async function placeOrder() {
         if (!tableId) {
-            alert('Table information is required to place an order.');
+            alert('Table information is required to place an order. Please scan a table QR code.');
+            return;
+        }
+
+        if (!tenantSlug) {
+            alert('Restaurant information is missing. Please try again.');
             return;
         }
 
