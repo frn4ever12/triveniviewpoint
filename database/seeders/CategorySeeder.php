@@ -11,9 +11,13 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        // Get first tenant from database
-        $tenant = Tenant::first();
-        $tenantId = $tenant ? $tenant->id : 1;
+        // Get all tenants to seed categories for each tenant
+        $tenants = Tenant::all();
+        
+        if ($tenants->isEmpty()) {
+            $this->command->warn('No tenants found. Please run TenantSeeder first.');
+            return;
+        }
 
         $categories = [
             [
@@ -95,25 +99,19 @@ class CategorySeeder extends Seeder
                 'status' => CommonStatusEnum::ACTIVE,
                 'is_featured' => true,
             ],
-            [
-                'name' => 'Chowmein',
-                'slug' => 'chowmein',
-                'status' => CommonStatusEnum::ACTIVE,
-                'is_featured' => true,
-            ],
-            [
-                'name' => 'Pakauda',
-                'slug' => 'pakauda',
-                'status' => CommonStatusEnum::ACTIVE,
-                'is_featured' => false,
-            ],
         ];
 
-        foreach ($categories as $data) {
-            Category::updateOrCreate(
-                ['slug' => $data['slug'], 'tenant_id' => $tenantId],
-                array_merge($data, ['tenant_id' => $tenantId])
-            );
+        foreach ($tenants as $tenant) {
+            $this->command->info("Seeding categories for tenant: {$tenant->name}");
+            
+            foreach ($categories as $data) {
+                Category::updateOrCreate(
+                    ['slug' => $data['slug'], 'tenant_id' => $tenant->id],
+                    array_merge($data, ['tenant_id' => $tenant->id])
+                );
+            }
         }
+
+        $this->command->info('Categories seeded successfully for all tenants!');
     }
 }
