@@ -415,7 +415,6 @@ class NepaliMenuItemSeeder extends Seeder
                         'tenant_id' => $tenant->id,
                         'name' => $catData['name'],
                         'slug' => $catData['slug'],
-                        'description' => "Nepali {$catData['name']} items",
                         'status' => CommonStatusEnum::ACTIVE,
                     ]
                 );
