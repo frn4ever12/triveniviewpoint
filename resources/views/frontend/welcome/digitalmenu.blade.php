@@ -631,6 +631,10 @@
         updateCartUI();
     }
 
+    // Make functions globally accessible
+    window.updateQuantity = updateQuantity;
+    window.removeFromCart = removeFromCart;
+
     function saveCart() {
         localStorage.setItem('qrCart', JSON.stringify(cart));
     }
