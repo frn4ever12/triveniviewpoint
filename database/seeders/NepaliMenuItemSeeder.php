@@ -421,7 +421,6 @@ class NepaliMenuItemSeeder extends Seeder
                 );
                 $tenantCategories[$catData['slug']] = $category;
             }
-            $this->command->info("Seeding menu items for tenant: {$tenant->name}");
             
             foreach ($menuItems as $itemData) {
                 $category = $tenantCategories[$itemData['category_slug']] ?? null;
