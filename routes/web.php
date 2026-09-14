@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\ContactController;
 use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\QrOrderController;
 use App\Http\Controllers\Mobile\DashboardController as MobileDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -31,8 +32,11 @@ Route::get('/digitalmenu/{slug}/{table}', [HomeController::class, 'digitalmenuTa
 
 // QR Order API routes
 Route::post('/api/qr/order', [QrOrderController::class, 'placeOrder'])->name('qr.order.place');
+Route::post('/api/qr/call-waiter', [QrOrderController::class, 'callWaiter'])->name('qr.call.waiter');
+Route::get('/api/qr/waiter-status', [QrOrderController::class, 'getWaiterCallStatus'])->name('qr.waiter.status');
 Route::get('/qr/track/{sessionToken}/{orderNo}', [QrOrderController::class, 'trackOrder'])->name('qr.order.track');
 Route::get('/qr/order/{sessionToken}/{orderNo}', [QrOrderController::class, 'trackOrder'])->name('qr.order.view');
+Route::get('/qr/track-page/{sessionToken}/{orderNo}', [HomeController::class, 'orderTrackPage'])->name('qr.order.track.page');
 
 // Checkout Route
 Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardController::class, 'index'])

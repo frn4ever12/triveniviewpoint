@@ -157,20 +157,45 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
+            background: var(--primary);
+            color: var(--white);
             border: none;
             border-radius: 50px;
             padding: 12px 24px;
             font-weight: 600;
-            box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+            box-shadow: 0 4px 20px rgba(220,38,38,0.3);
             z-index: 1000;
-            cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition);
         }
         .qr-cart-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(220, 53, 69, 0.5);
+            box-shadow: 0 6px 25px rgba(220,38,38,0.4);
+        }
+        .qr-waiter-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #f59e0b;
+            color: var(--white);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+        .qr-waiter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(245,158,11,0.4);
+        }
+        .qr-waiter-btn.calling {
+            background: #10b981;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         .qr-cart-btn .badge {
             background: #ffc107;
@@ -183,33 +208,15 @@
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 8;
             padding: 6px 12px;
-            font-size: 0.8rem;
+            font-size: 0.8m;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-        }
-        .add-to-cart-btn:hover {
-            background: #c82333;
-        }
+            transition: all 0.3*
 
-        /* Cart Modal */
-        .cart-item {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--gray-100);
-        }
-        .cart-item-qty {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .cart-item-qty button {
-            width: 28px;
-            height: 28px;
+            align-items: center
             border: 1px solid var(--gray-200);
             background: var(--gray-50);
             border-radius: 4px;
@@ -239,11 +246,14 @@
             .dm-card-body { padding: 0.85rem; }
             .dm-card-name { font-size: 0.85rem; }
             .dm-card-price { font-size: 0.95rem; }
-            .dm-card-desc { font-size: 0.75rem; }
+            .dm-card-desc { font-size: 0.75; }
+            .hero-tagline { font-size: 1rem; }
+            .restaurant-logo { max-height: 60px; max-width: 150pxrem; }
             .dm-category-title { font-size: 1.2rem; margin: 1.5rem 0 1rem; }
             .dm-menu-name { font-size: 1rem; margin: 1rem 0 0.75rem; }
             .dm-section { padding: 1.5rem 0; }
-            .dm-card { animation: none; }
+            .dm-card img { height: 160px;     .dm-card { animation: none; }
+        }
             .qr-cart-btn {
                 bottom: 15px;
                 right: 15px;
@@ -340,9 +350,11 @@
                                                     <div class="dm-tags">
                                                         @if(($item->is_veg ?? false))<span class="dm-tag veg">Veg</span>@endif
                                                         @if(($item->is_popular ?? false))<span class="dm-tag popular">Popular</span>@endif
+                                                        @if(($item->is_spicy ?? false))<span class="dm-tag spicy">Spicy</span>@endif
+                                                        @if(($item->is_chef_special ?? false))<span class="dm-tag chef">Chef's</span>@endif
                                                     </div>
                                                     <button class="add-to-cart-btn" onclick="addToCart({{ $item->id }}, '{{ $item->name }}', {{ $item->price }})">
-                                                        <i class="bi bi-plus"></i> Add
+                                                        <i class="bi bi-plus-lg"></i> Add
                                                     </button>
                                                 </div>
                                             </div>
@@ -374,6 +386,11 @@
     <!-- Cart Button -->
     <button class="qr-cart-btn" onclick="showCartModal()" id="cartBtn" style="display: none;">
         <i class="bi bi-cart3"></i> Cart <span class="badge" id="cartCount">0</span>
+    </button>
+
+    <!-- Call Waiter Button -->
+    <button class="qr-waiter-btn" onclick="callWaiter()" id="waiterBtn">
+        <i class="bi bi-bell"></i> Call Waiter
     </button>
 
     <!-- Cart Modal -->
@@ -646,6 +663,74 @@
 
     window.showCartModal = showCartModal;
 
+    // Waiter Call Functions
+    async function callWaiter() {
+        if (!tableId) {
+            alert('Table information is required to call waiter.');
+            return;
+        }
+
+        if (!tenantSlug) {
+            alert('Restaurant information is missing.');
+            return;
+        }
+
+        if (!confirm('Do you need assistance from our waiter?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/qr/call-waiter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    tenant_slug: tenantSlug,
+                    table_id: tableId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const waiterBtn = document.getElementById('waiterBtn');
+                waiterBtn.classList.add('calling');
+                waiterBtn.innerHTML = '<i class="bi bi-bell"></i> Calling...';
+                showToast('Waiter has been called');
+                
+                // Check status after 30 seconds
+                setTimeout(checkWaiterStatus, 30000);
+            } else {
+                alert(result.message || 'Failed to call waiter');
+            }
+        } catch (error) {
+            console.error('Error calling waiter:', error);
+            alert('Failed to call waiter. Please try again.');
+        }
+    }
+
+    async function checkWaiterStatus() {
+        try {
+            const response = await fetch(`/api/qr/waiter-status?tenant_slug=${tenantSlug}&table_id=${tableId}`);
+            const result = await response.json();
+            
+            if (result.success && result.call) {
+                const waiterBtn = document.getElementById('waiterBtn');
+                if (result.call.status === 'accepted' || result.call.status === 'completed') {
+                    waiterBtn.classList.remove('calling');
+                    waiterBtn.innerHTML = '<i class="bi bi-bell"></i> Call Waiter';
+                    showToast('Waiter is on the way');
+                }
+            }
+        } catch (error) {
+            console.error('Error checking waiter status:', error);
+        }
+    }
+
+    window.callWaiter = callWaiter;
+
     // Order Functions
     async function placeOrder() {
         if (!tableId) {
@@ -726,10 +811,23 @@
             } else {
                 console.error('Order failed:', result);
                 alert(result.message || 'Failed to place order');
-            }
+            }    <p class="mt-3 text-muted small">Track your order status in real-time</p>
+                
         } catch (error) {
             console.error('Error placing order:', error);
-            alert('Failed to place order. Please try again.');
+            alert('Failed to place order. Please try again.');ow();
+                
+                // Add track order button to confirmation modal
+                setTimeout(() => {
+                    const modalBody = document.querySelector('#orderConfirmModal .modal-body');
+                    const trackBtn = document.createElement('button');
+                    trackBtn.className = 'btn btn-outline-primary w-100 mt-3';
+                    trackBtn.innerHTML = '<i class="bi bi-geo-alt"></i> Track Order';
+                    trackBtn.onclick = () => {
+                        wind.location.href = `/qr/track-page/${sessionToken}/${result.order.order_no}`;
+                    };
+                    modalBody.appendChildtrackBtn);
+                }, 100
         }
     }
 
@@ -847,3 +945,5 @@
 
 </body>
 </html>
+        `;
+   

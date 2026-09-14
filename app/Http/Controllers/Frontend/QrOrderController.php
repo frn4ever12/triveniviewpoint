@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Table;
 use App\Models\Tenant;
+use App\Models\WaiterCall;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -243,5 +244,89 @@ class QrOrderController extends Controller
         ]);
 
         return $notification;
+    }
+
+    public function callWaiter(Request $request)
+    {
+        $validated = $request->validate([
+            'tenant_slug' => 'required|string',
+            'table_id' => 'required|integer',
+        ]);
+
+        $tenant = Tenant::where('slug', $validated['tenant_slug'])
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $table = Table::where('id', $validated['table_id'])
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
+
+        // Check if there's already a pending call for this table
+        $existingCall = WaiterCall::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('table_id', $table->id)
+            ->where('status', 'pending')
+            ->where('created_at', '>', now()->subMinutes(2))
+            ->first();
+
+        if ($existingCall) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Waiter has already been called. Please wait.',
+            ], 429);
+        }
+
+        $waiterCall = WaiterCall::withoutGlobalScopes()->create([
+            'tenant_id' => $tenant->id,
+            'table_id' => $table->id,
+            'status' => 'pending',
+        ]);
+
+        // Create notification for staff
+        Notification::create([
+            'tenant_id' => $tenant->id,
+            'type' => 'waiter_call',
+            'title' => 'Waiter Call',
+            'message' => "Table {$table->name} - Customer is requesting assistance",
+            'data' => json_encode([
+                'waiter_call_id' => $waiterCall->id,
+                'table_id' => $table->id,
+                'table_name' => $table->name,
+            ]),
+            'read' => false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Waiter has been called',
+        ]);
+    }
+
+    public function getWaiterCallStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'tenant_slug' => 'required|string',
+            'table_id' => 'required|integer',
+        ]);
+
+        $tenant = Tenant::where('slug', $validated['tenant_slug'])
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $table = Table::where('id', $validated['table_id'])
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
+
+        $recentCall = WaiterCall::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('table_id', $table->id)
+            ->where('created_at', '>', now()->subMinutes(30))
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'call' => $recentCall,
+        ]);
     }
 }

@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\LabelController;
 use App\Http\Controllers\Admin\MenuAvailabilityController;
 use App\Http\Controllers\Admin\MenuItemController;
 use App\Http\Controllers\Admin\ModifierController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\PurchaseController;
@@ -265,6 +266,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    
+    // Waiter call routes
+    Route::get('/waiter-calls', [NotificationController::class, 'getWaiterCalls'])->name('waiter-calls.index');
+    Route::put('/waiter-calls/{id}/attend', [NotificationController::class, 'attendWaiterCall'])->name('waiter-calls.attend');
+    Route::put('/waiter-calls/{id}/complete', [NotificationController::class, 'completeWaiterCall'])->name('waiter-calls.complete');
 
     Route::get('/pos-settings', [PosSettingController::class, 'index'])
         ->name('pos-settings.index');

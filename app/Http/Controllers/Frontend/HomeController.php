@@ -173,4 +173,17 @@ class HomeController extends Controller
         return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tableRecord', 'tenant'))
             ->with('menuCategories', $categories);
     }
+
+    public function orderTrackPage($sessionToken, $orderNo)
+    {
+        $order = Order::withoutGlobalScopes()
+            ->where('customer_session_token', $sessionToken)
+            ->where('order_no', $orderNo)
+            ->with(['items.menuItem', 'table', 'invoice'])
+            ->firstOrFail();
+
+        $tenant = Tenant::find($order->tenant_id);
+        
+        return view('frontend.welcome.order-track', compact('order', 'tenant'));
+    }
 }
