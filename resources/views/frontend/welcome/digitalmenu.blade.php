@@ -206,12 +206,16 @@
     </section>
 
     <!-- Category Nav (sticky) -->
+    @if($showSearch || $showCategories)
     <nav class="dm-category-nav">
         <div class="container">
+            @if($showSearch)
             <div class="dm-search">
                 <i class="bi bi-search"></i>
                 <input type="text" id="dmSearch" placeholder="Search dishes..." autocomplete="off">
             </div>
+            @endif
+            @if($showCategories)
             <div class="scroll-x mt-3 justify-content-sm-center justify-content-start px-2 px-sm-0">
                 <button class="dm-cat-btn active" data-category="all">All Items</button>
                 @foreach($menuCategories as $category)
@@ -220,8 +224,10 @@
                     </button>
                 @endforeach
             </div>
+            @endif
         </div>
     </nav>
+    @endif
 
     <!-- Menu -->
     <section class="dm-section">
@@ -250,12 +256,16 @@
                                 @foreach($items as $item)
                                     <div class="col-lg-3 col-md-6 col-sm-6 menu-item" data-category="{{ $catSlug }}">
                                         <div class="dm-card">
+                                            @if($showImages)
                                             <img src="{{ $item->getFirstMediaUrl('image') ?: asset('assets/images/defaultfood.png') }}"
                                                  alt="{{ $item->name }}" loading="lazy">
+                                            @endif
                                             <div class="dm-card-body">
                                                 <div class="dm-card-top">
                                                     <span class="dm-card-name">{{ $item->name }}</span>
+                                                    @if($showPrices)
                                                     <span class="dm-card-price">Rs.{{ number_format($item->price, 2) }}</span>
+                                                    @endif
                                                 </div>
                                                 @if($item->description)
                                                     <p class="dm-card-desc">{{ $item->description }}</p>
