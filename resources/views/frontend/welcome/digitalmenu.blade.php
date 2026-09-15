@@ -356,13 +356,25 @@
                         <h2 class="dm-category-title">{{ $categoryName }}</h2>
 
                         @foreach($groupedByMenu as $menuName => $items)
+                            <div class="row">
+                                @foreach($items as $item)
+                                    <div class="col-lg-3 col-md-6 col-sm-6 menu-item" data-category="{{ $catSlug }}" data-item-id="{{ $item->id }}" data-item-name="{{ $item->name }}" data-item-price="{{ $item->price }}">
+                                        <div class="dm-card">
+                                            @if($showImages)
+                                            <img src="{{ $item->getFirstMediaUrl('image') ?: asset('assets/images/defaultfood.png') }}"
+                                                 alt="{{ $item->name }}" loading="lazy">
+                                            @endif
+                                            <div class="dm-card-body">
+                                                <div class="dm-card-top">
+                                                    <span class="dm-card-name">{{ $item->name }}</span>
+                                                    @if($showPrices)
+                                                    <span class="dm-card-price">Rs.{{ number_format($item->price, 2) }}</span>
+                                                    @endif
+                                                </div>
+                                                @if($item->description)
+                                                    <p class="dm-card-desc">{{ $item->description }}</p>
                                                 @endif
-                                                <div class="dm-card-body">
-                                                    <div class="dm-card-top">
-                                                        <span class="dm-card-name">{{ $item->name }}</span>
-                                                        @if($showPrices)
-                                                        <span class="dm-card-price">Rs.{{ number_format($item->price, 2) }}</span>
-                                                        @endif
+                                                <div class="dm-card-footer">
                                                     <div class="dm-tags">
                                                         @if(($item->is_veg ?? false))<span class="dm-tag veg">Veg</span>@endif
                                                         @if(($item->is_popular ?? false))<span class="dm-tag popular">Popular</span>@endif
@@ -377,6 +389,8 @@
                                         </div>
                                     </div>
                                 @endforeach
+                            </div>
+                        @endforeach
                             </div>
                         @endforeach
                     </div>
