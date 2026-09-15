@@ -187,13 +187,13 @@
             border-radius: 50px;
             padding: 12px 24px;
             font-weight: 600;
-            box-shadow: 0 4px 20px rgba({{ hex2rgb($primaryColor) }},0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             z-index: 1000;
             transition: all 0.3s;
         }
         .qr-cart-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba({{ hex2rgb($primaryColor) }},0.4);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.3);
         }
         .qr-waiter-btn {
             position: fixed;
