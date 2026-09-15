@@ -3,13 +3,96 @@
     $enabledModules = $currentTenant ? $currentTenant->enabled_modules : [];
     $trialEndsAt = $currentTenant ? $currentTenant->trial_ends_at : null;
     $daysRemaining = $trialEndsAt ? round(now()->diffInDays($trialEndsAt, false)) : 0;
-    
+
     // Get package name from subscription
     $packageName = 'Free Trial';
     if ($currentTenant && $currentTenant->subscription) {
         $packageName = $currentTenant->subscription->plan->name ?? 'Free Trial';
     }
+
+    // Helper function to check if a submenu should be expanded
+    $isSubmenuActive = function($routes) {
+        foreach ($routes as $route) {
+            if (request()->routeIs($route)) {
+                return true;
+            }
+        }
+        return false;
+    };
 @endphp
+
+<style>
+    .nav-arrow {
+        transition: transform 0.2s ease;
+        opacity: 1 !important;
+        display: inline-block !important;
+        width: 16px !important;
+        height: 16px !important;
+        visibility: visible !important;
+    }
+    .nav-link[aria-expanded="true"] .nav-arrow {
+        transform: rotate(180deg);
+    }
+    .nav-link.has-arrow {
+        position: relative;
+    }
+    .nav-link.has-arrow .nav-arrow {
+        display: inline-block !important;
+        width: 16px !important;
+        height: 16px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    .nav-link.has-arrow i[data-feather="chevron-down"] {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+    /* Ensure all feather icons in sidebar are visible */
+    .navbar-vertical i[data-feather],
+    .navbar-vertical svg.feather {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        vertical-align: middle !important;
+    }
+    .navbar-vertical .nav-icon {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    /* Ensure submenu icons are always visible */
+    .collapse.show i[data-feather],
+    .collapse.show svg.feather,
+    .collapse i[data-feather],
+    .collapse svg.feather {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+        vertical-align: middle !important;
+    }
+    .collapse.show .icon-xs,
+    .collapse .icon-xs {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+    /* Force visibility on all nav-link icons */
+    .nav-link i,
+    .nav-link svg {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+</style>
 
 <nav class="navbar-vertical navbar" style="background: var(--sidebar);">
     <div>
@@ -120,6 +203,7 @@
                 <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" data-bs-target="#navInventory"
                    aria-expanded="false" aria-controls="navInventory">
                     <i data-feather="box" class="nav-icon icon-xs me-2"></i> Inventory
+                    <i data-feather="chevron-down" class="nav-arrow ms-auto"></i>
                 </a>
                 <div id="navInventory" class="collapse" data-bs-parent="#sideNavbar">
                     <ul class="nav flex-column">
@@ -184,6 +268,7 @@
                 <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" data-bs-target="#navMenuLevel"
                    aria-expanded="false" aria-controls="navMenuLevel">
                     <i data-feather="clipboard" class="nav-icon icon-xs me-2"></i> Reports
+                    <i data-feather="chevron-down" class="nav-arrow ms-auto"></i>
                 </a>
                 <div id="navMenuLevel" class="collapse" data-bs-parent="#sideNavbar">
                     <ul class="nav flex-column">
@@ -256,6 +341,7 @@
                 <a class="nav-link has-arrow {{ request()->routeIs('admin.digital-menu.*') ? 'active' : '' }}"
                    href="#digitalMenuSubmenu" data-bs-toggle="collapse" aria-expanded="false">
                     <i data-feather="grid" class="nav-icon icon-xs me-2"></i> Digital Menu
+                    <i data-feather="chevron-down" class="nav-arrow ms-auto"></i>
                 </a>
                 <ul class="nav collapse sub-nav" id="digitalMenuSubmenu">
                     <li class="nav-item">
