@@ -254,9 +254,23 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link has-arrow {{ request()->routeIs('admin.digital-menu.*') ? 'active' : '' }}"
-                   href="{{ route('admin.digital-menu.index') }}">
+                   href="#digitalMenuSubmenu" data-bs-toggle="collapse" aria-expanded="false">
                     <i data-feather="grid" class="nav-icon icon-xs me-2"></i> Digital Menu
                 </a>
+                <ul class="nav collapse sub-nav" id="digitalMenuSubmenu">
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.digital-menu.index') ? 'active' : '' }}"
+                           href="{{ route('admin.digital-menu.index') }}">
+                            <i data-feather="list" class="nav-icon icon-xs me-2"></i> Tables
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.digital-menu.design') ? 'active' : '' }}"
+                           href="{{ route('admin.digital-menu.design') }}">
+                            <i data-feather="palette" class="nav-icon icon-xs me-2"></i> Design Settings
+                        </a>
+                    </li>
+                </ul>
             </li>
 
             <li class="nav-item">

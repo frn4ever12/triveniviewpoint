@@ -10,9 +10,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/main.css') }}">
     <style>
+        @php
+            $primaryColor = $design->primary_color ?? '#dc2626';
+            $secondaryColor = $design->secondary_color ?? '#1a1a2e';
+            $accentColor = $design->accent_color ?? '#f59e0b';
+            $backgroundColor = $design->background_color ?? '#f8f9fa';
+            $textColor = $design->text_color ?? '#1f2937';
+            $fontFamily = $design->font_family ?? 'Inter';
+            $cardStyle = $design->card_style ?? 'modern';
+            $layout = $design->layout ?? 'grid';
+            $showCategories = $design->show_categories ?? true;
+            $showSearch = $design->show_search ?? true;
+            $showPrices = $design->show_prices ?? true;
+            $showImages = $design->show_images ?? true;
+        @endphp
+
+        :root {
+            --dm-primary: {{ $primaryColor }};
+            --dm-secondary: {{ $secondaryColor }};
+            --dm-accent: {{ $accentColor }};
+            --dm-background: {{ $backgroundColor }};
+            --dm-text: {{ $textColor }};
+            --dm-font: {{ $fontFamily }};
+        }
+
         /* ─── Digital Menu Overrides ─── */
         .dm-hero {
-            background: linear-gradient(135deg, var(--gray-900) 0%, #1a1a2e 100%);
+            background: linear-gradient(135deg, var(--dm-secondary) 0%, {{ $secondaryColor }} 100%);
             padding: 3rem 0;
             text-align: center;
             position: relative;
@@ -25,7 +49,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 60%);
+            background: radial-gradient(circle, {{ $primaryColor }}0.08) 0%, transparent 60%);
             animation: dmPulse 8s ease-in-out infinite;
         }
         @keyframes dmPulse {
@@ -37,7 +61,7 @@
             z-index: 2;
         }
         .dm-hero h1 {
-            font-family: var(--font-serif);
+            font-family: var(--dm-font);
             font-size: 2.8rem;
             font-weight: 700;
             color: var(--white);
@@ -109,34 +133,34 @@
         /* Menu items */
         .dm-section { padding: 2.5rem 0; }
         .dm-category-title {
-            font-family: var(--font-serif);
+            font-family: var(--dm-font);
             font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin: 2rem 0 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 3px solid var(--primary);
+            color: var(--dm-text);
         }
         .dm-menu-name {
             font-family: var(--font-sans);
             font-size: 1.15rem;
             font-weight: 600;
-            color: var(--gray-700);
+            color: var(--dm-text);
             margin: 1.5rem 0 1rem;
             padding-left: 0.75rem;
-            border-left: 4px solid var(--primary);
+            border-left: 4px solid var(--dm-primary);
         }
         .dm-card {
             background: var(--white);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             transition: var(--transition);
+            animation: fadeInUp 0.5s ease-out;
             height: 100%;
             border: 1px solid var(--gray-100);
-            animation: fadeInUp 0.5s ease forwards;
         }
-        .dm-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+        .dm-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+            border-color: var(--dm-primary);
+        }
         .dm-card img { width: 100%; height: 180px; object-fit: cover; transition: transform 0.4s ease; }
         .dm-card:hover img { transform: scale(1.05); }
         .dm-card-body { padding: 1.15rem; }
@@ -157,19 +181,19 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: var(--primary);
+            background: var(--dm-primary);
             color: var(--white);
             border: none;
             border-radius: 50px;
             padding: 12px 24px;
             font-weight: 600;
-            box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+            box-shadow: 0 4px 20px rgba({{ hex2rgb($primaryColor) }},0.3);
             z-index: 1000;
-            transition: var(--transition);
+            transition: all 0.3s;
         }
         .qr-cart-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(220,38,38,0.4);
+            box-shadow: 0 6px 25px rgba({{ hex2rgb($primaryColor) }},0.4);
         }
         .qr-waiter-btn {
             position: fixed;
@@ -205,24 +229,19 @@
 
         /* Add to Cart Button */
         .add-to-cart-btn {
-            background: var(--primary);
+            background: var(--dm-primary);
             color: white;
             border: none;
-            border-radius: 8;
+            border-radius: 8px;
             padding: 6px 12px;
-            font-size: 0.8m;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3*
-
-            display: flex;
-            align-items: center
-            border: 1px solid var(--gray-200);
-            background: var(--gray-50);
-            border-radius: 4px;
-            cursor: pointer;
+            transition: all 0.3s;
         }
-        .cart-item-qty button:hover {
+        .add-to-cart-btn:hover {
+            background: var(--dm-primary);
+            opacity: 0.9;
             background: var(--gray-100);
         }
 
@@ -292,12 +311,16 @@
     </section>
 
     <!-- Category Nav (sticky) -->
+    @if($showSearch || $showCategories)
     <nav class="dm-category-nav">
         <div class="container">
+            @if($showSearch)
             <div class="dm-search">
                 <i class="bi bi-search"></i>
                 <input type="text" id="dmSearch" placeholder="Search dishes..." autocomplete="off">
             </div>
+            @endif
+            @if($showCategories)
             <div class="scroll-x mt-3 justify-content-sm-center justify-content-start px-2 px-sm-0">
                 <button class="dm-cat-btn active" data-category="all">All Items</button>
                 @foreach($menuCategories as $category)
@@ -306,8 +329,10 @@
                     </button>
                 @endforeach
             </div>
+            @endif
         </div>
     </nav>
+    @endif
 
     <!-- Menu -->
     <section class="dm-section">
@@ -331,22 +356,13 @@
                         <h2 class="dm-category-title">{{ $categoryName }}</h2>
 
                         @foreach($groupedByMenu as $menuName => $items)
-                            <h3 class="dm-menu-name">{{ $menuName }}</h3>
-                            <div class="row g-3 mb-4">
-                                @foreach($items as $item)
-                                    <div class="col-lg-3 col-md-6 col-sm-6 menu-item" data-category="{{ $catSlug }}" data-item-id="{{ $item->id }}" data-item-name="{{ $item->name }}" data-item-price="{{ $item->price }}">
-                                        <div class="dm-card">
-                                            <img src="{{ $item->getFirstMediaUrl('image') ?: asset('assets/images/defaultfood.png') }}"
-                                                 alt="{{ $item->name }}" loading="lazy">
-                                            <div class="dm-card-body">
-                                                <div class="dm-card-top">
-                                                    <span class="dm-card-name">{{ $item->name }}</span>
-                                                    <span class="dm-card-price">Rs.{{ number_format($item->price, 2) }}</span>
-                                                </div>
-                                                @if($item->description)
-                                                    <p class="dm-card-desc">{{ $item->description }}</p>
                                                 @endif
-                                                <div class="dm-card-footer">
+                                                <div class="dm-card-body">
+                                                    <div class="dm-card-top">
+                                                        <span class="dm-card-name">{{ $item->name }}</span>
+                                                        @if($showPrices)
+                                                        <span class="dm-card-price">Rs.{{ number_format($item->price, 2) }}</span>
+                                                        @endif
                                                     <div class="dm-tags">
                                                         @if(($item->is_veg ?? false))<span class="dm-tag veg">Veg</span>@endif
                                                         @if(($item->is_popular ?? false))<span class="dm-tag popular">Popular</span>@endif

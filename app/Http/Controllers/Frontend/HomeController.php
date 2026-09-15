@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\About;
 use App\Models\Banner;
 use App\Models\Category;
+use App\Models\DigitalMenuDesign;
 use App\Models\MenuItem;
 use App\Models\Tenant;
 use Vinkla\Hashids\Facades\Hashids;
@@ -104,7 +105,12 @@ class HomeController extends Controller
             ];
         });
 
-        return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tenantId'))
+        // Get design settings
+        $design = DigitalMenuDesign::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->first();
+
+        return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tenantId', 'design'))
             ->with('menuCategories', $categories);
     }
 
@@ -170,7 +176,12 @@ class HomeController extends Controller
             }
         }
 
-        return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tableRecord', 'tenant'))
+        // Get design settings
+        $design = DigitalMenuDesign::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->first();
+
+        return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tableRecord', 'tenant', 'design'))
             ->with('menuCategories', $categories);
     }
 

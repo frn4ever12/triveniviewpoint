@@ -260,6 +260,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('can:digital-menu.view')->group(function () {
         Route::get('/digital-menu', [DigitalMenuController::class, 'index'])->name('digital-menu.index');
+        Route::get('/digital-menu/design', [DigitalMenuController::class, 'design'])->name('digital-menu.design');
+        Route::put('/digital-menu/design', [DigitalMenuController::class, 'updateDesign'])->name('digital-menu.design.update');
     });
 
     // Notification routes
