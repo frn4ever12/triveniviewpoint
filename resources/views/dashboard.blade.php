@@ -394,10 +394,6 @@
             <div>
                 <h4 class="fw-bold mb-1">Dashboard</h4>
                 <p class="text-muted mb-0">{{ auth()->user()?->tenant?->name ?? 'Restaurant' }} - Restaurant Management Overview</p>
-                @if(session('debug_notifications'))
-                <small class="text-warning">Debug: {{ session('debug_notifications')['count'] }} notifications, Tenant ID: {{ session('debug_notifications')['tenant_id'] }}</small>
-                @endif
-                <button onclick="testNotification()" class="btn btn-sm btn-outline-warning ms-2">Test Notification</button>
             </div>
             <div class="d-flex gap-2 align-items-center">
                 <!-- Notifications -->
@@ -888,24 +884,6 @@
 
         // Poll for new notifications and play bell sound
         let lastNotificationCount = {{ isset($unreadNotifications) ? $unreadNotifications->count() : 0 }};
-
-        // Test notification function
-        function testNotification() {
-            fetch('/api/notifications/test', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            }).then(r => r.json()).then(data => {
-                if (data.success) {
-                    alert('Test notification created! Refresh the page to see it.');
-                } else {
-                    alert('Failed: ' + (data.error || 'Unknown error'));
-                }
-            }).catch(err => {
-                alert('Error: ' + err.message);
-            });
-        }
 
         setInterval(() => {
             fetch('/api/notifications/unread-count')

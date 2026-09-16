@@ -135,18 +135,6 @@ class DashboardController extends Controller
             ->latest()
             ->take(10)
             ->get();
-        
-        \Log::info('Dashboard notifications fetched', [
-            'tenant_id' => $tenantId,
-            'unread_count' => $unreadNotifications->count(),
-            'notifications' => $unreadNotifications->toArray(),
-        ]);
-
-        // Add debug info to session for display
-        session()->flash('debug_notifications', [
-            'count' => $unreadNotifications->count(),
-            'tenant_id' => $tenantId,
-        ]);
 
         return view('dashboard',
         compact('tables','orders','orderitems','latestOrders',
