@@ -248,35 +248,52 @@ class QrOrderController extends Controller
 
     public function callWaiter(Request $request)
     {
+        \Log::info('Call waiter request received', [
+            'request_data' => $request->all(),
+        ]);
+
         $validated = $request->validate([
             'tenant_slug' => 'required|string',
             'table_id' => 'required|integer',
         ]);
 
-        \Log::info('Call waiter request received', [
+        \Log::info('Call waiter validation passed', [
             'tenant_slug' => $validated['tenant_slug'],
             'table_id' => $validated['table_id'],
         ]);
 
-        $tenant = Tenant::where('slug', $validated['tenant_slug'])
-            ->where('status', 'active')
-            ->firstOrFail();
+        try {
+            $tenant = Tenant::where('slug', $validated['tenant_slug'])
+                ->where('status', 'active')
+                ->firstOrFail();
 
-        \Log::info('Tenant found', [
-            'tenant_id' => $tenant->id,
-            'tenant_name' => $tenant->name,
-            'tenant_slug' => $tenant->slug,
-        ]);
+            \Log::info('Tenant found', [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name,
+                'tenant_slug' => $tenant->slug,
+            ]);
 
-        $table = Table::where('id', $validated['table_id'])
-            ->where('tenant_id', $tenant->id)
-            ->firstOrFail();
+            $table = Table::where('id', $validated['table_id'])
+                ->where('tenant_id', $tenant->id)
+                ->firstOrFail();
 
-        \Log::info('Table found', [
-            'table_id' => $table->id,
-            'table_name' => $table->name,
-            'table_tenant_id' => $table->tenant_id,
-        ]);
+            \Log::info('Table found', [
+                'table_id' => $table->id,
+                'table_name' => $table->name,
+                'table_tenant_id' => $table->tenant_id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to find tenant or table', [
+                'error' => $e->getMessage(),
+                'tenant_slug' => $validated['tenant_slug'],
+                'table_id' => $validated['table_id'],
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to find restaurant or table',
+            ], 404);
+        }
 
         // Check if there's already a pending call for this table
         $existingCall = WaiterCall::withoutGlobalScopes()
@@ -335,6 +352,9 @@ class QrOrderController extends Controller
                 'tenant_id' => $tenant->id,
                 'table_id' => $table->id,
             ]);
+            
+            // Return success even if notification fails - waiter call was created
+            \Log::warning('Returning success despite notification failure');
         }
 
         return response()->json([
