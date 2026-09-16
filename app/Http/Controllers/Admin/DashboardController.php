@@ -142,6 +142,12 @@ class DashboardController extends Controller
             'notifications' => $unreadNotifications->toArray(),
         ]);
 
+        // Add debug info to session for display
+        session()->flash('debug_notifications', [
+            'count' => $unreadNotifications->count(),
+            'tenant_id' => $tenantId,
+        ]);
+
         return view('dashboard',
         compact('tables','orders','orderitems','latestOrders',
         'statusCounts','latestTables','ordersToday','ordersYesterday','ordersChange','totalTables',

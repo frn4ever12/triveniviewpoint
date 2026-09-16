@@ -394,6 +394,9 @@
             <div>
                 <h4 class="fw-bold mb-1">Dashboard</h4>
                 <p class="text-muted mb-0">{{ auth()->user()?->tenant?->name ?? 'Restaurant' }} - Restaurant Management Overview</p>
+                @if(session('debug_notifications'))
+                <small class="text-warning">Debug: {{ session('debug_notifications')['count'] }} notifications, Tenant ID: {{ session('debug_notifications')['tenant_id'] }}</small>
+                @endif
             </div>
             <div class="d-flex gap-2 align-items-center">
                 <!-- Notifications -->
