@@ -932,65 +932,75 @@
             return;
         }
 
-        @if(isset($tenant))
-            const tenantSlug = '{{ $tenant->slug }}';
-        @else
-            const tenantSlug = 'demo-restaurant';
-        @endif
-        
-        @if(isset($tableRecord))
-            const tableId = {{ $tableRecord->id }};
-        @else
-            const tableId = 1;
-        @endif
+        // Convert cart to session format
+        const sessionCart = {};
+        cart.forEach(item => {
+            sessionCart[item.id] = item.quantity;
+        });
 
-        const orderData = {
-            tenant_slug: tenantSlug,
-            table_id: tableId,
-            items: cart.map(item => ({
-                menu_item_id: item.id,
-                quantity: item.quantity,
-                unit_price: item.price,
-                size: 1
-            })),
-            customer_name: customerName || null,
-            customer_phone: customerPhone || null,
-            notes: orderNotes || null
-        };
-
-        console.log('Placing order with data:', orderData);
-
+        // Sync cart to session
         try {
-            const response = await fetch('/api/qr/order', {
+            const syncResponse = await fetch('/api/cart/sync', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify(orderData)
+                body: JSON.stringify({ cart: sessionCart })
             });
 
-            console.log('Response status:', response.status);
-            
-            const result = await response.json();
-            console.log('Response data:', result);
+            if (!syncResponse.ok) {
+                console.error('Cart sync failed');
+                showToast('Failed to sync cart');
+                return;
+            }
+        } catch (error) {
+            console.error('Cart sync error:', error);
+            showToast('Failed to sync cart');
+            return;
+        }
 
-            if (result.success) {
+        // Submit checkout form
+        const formData = new FormData();
+        formData.append('order_notes', orderNotes || '');
+        
+        @if(isset($tableRecord))
+            const tableId = {{ $tableRecord->id }};
+        @else
+            const tableId = null;
+        @endif
+
+        const checkoutUrl = tableId ? `/checkout/process/${tableId}` : '/checkout/process';
+
+        try {
+            const response = await fetch(checkoutUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: formData
+            });
+
+            console.log('Checkout response status:', response.status);
+
+            if (response.redirected) {
                 cart = [];
                 updateCartUI();
                 closeCheckoutModal();
-                showToast('Order placed successfully! Order #' + result.order.order_no);
-                
-                // Show order confirmation
-                setTimeout(() => {
-                    alert('Order placed successfully!\n\nOrder #: ' + result.order.order_no + '\nTotal: Rs. ' + result.order.total_amount.toFixed(2) + '\n\nYour order is being prepared.');
-                }, 500);
+                showToast('Order placed successfully!');
+                window.location.href = response.url;
+            } else if (response.ok) {
+                cart = [];
+                updateCartUI();
+                closeCheckoutModal();
+                showToast('Order placed successfully!');
             } else {
-                console.error('Order failed:', result);
-                showToast(result.message || 'Failed to place order');
+                const errorText = await response.text();
+                console.error('Checkout failed:', errorText);
+                showToast('Failed to place order');
             }
         } catch (error) {
-            console.error('Error placing order:', error);
+            console.error('Checkout error:', error);
             showToast('Failed to place order. Please try again.');
         }
     }

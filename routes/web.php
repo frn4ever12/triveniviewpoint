@@ -38,6 +38,9 @@ Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardCo
     ->middleware(['auth'])
     ->name('checkout-dashboard');
 Route::post('/checkout/process/{table?}', [CheckoutController::class, 'process'])->name('checkout.process');
+
+// Cart sync for QR menu
+Route::post('/api/cart/sync', [CheckoutController::class, 'syncCart'])->name('cart.sync');
 // Order Routes
 Route::prefix('order')->name('order.')->group(function () {
     Route::get('/{order}/confirmation', [CheckoutController::class, 'confirmation'])->name('confirmation');

@@ -211,4 +211,22 @@ class CheckoutController extends Controller
             ->with('success', 'Order confirmed! Your order #'.$order->order_no.' has been placed successfully. We will get your order shortly.');
 
     }
+
+    /**
+     * Sync cart from JavaScript to session
+     */
+    public function syncCart(Request $request)
+    {
+        $cart = $request->input('cart', []);
+        
+        // Validate cart structure
+        if (!is_array($cart)) {
+            return response()->json(['success' => false, 'message' => 'Invalid cart data'], 400);
+        }
+
+        // Store cart in session
+        session()->put('cart', $cart);
+
+        return response()->json(['success' => true, 'message' => 'Cart synced successfully']);
+    }
 }
