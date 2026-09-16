@@ -96,7 +96,7 @@
                         </button>
                     </div>
                     <div class="card-body p-3">
-                        <div class="row g-3" id="kotList">
+                        <div class="row g-4" id="kotList">
                         </div>
                     </div>
                 </div>
@@ -1070,47 +1070,9 @@
 
 <?php $__env->startPush('scripts'); ?>
 <script>
-    // Cart State
     let cart = [];
-    let currentTable = null;
+    let currentTable = { id: null, name: '' };
     let isOrderCreating = false;
-    let currentOrderId = null;
-
-    // Poll for notifications
-    function pollNotifications() {
-        fetch('/admin/notifications')
-            .then(r => r.json())
-            .then(d => {
-                if (d.unread_count > 0) {
-                    showNotificationBadge(d.unread_count);
-                }
-            });
-    }
-
-    function showNotificationBadge(count) {
-        let badge = document.getElementById('notificationBadge');
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.id = 'notificationBadge';
-            badge.className = 'badge bg-danger ms-2';
-            badge.style.position = 'fixed';
-            badge.style.top = '20px';
-            badge.style.right = '20px';
-            badge.style.zIndex = '9999';
-            badge.style.cursor = 'pointer';
-            badge.onclick = () => {
-                fetch('/admin/notifications/read-all', { method: 'PUT' });
-                badge.remove();
-            };
-            document.body.appendChild(badge);
-        }
-        badge.textContent = count + ' New QR Order' + (count > 1 ? 's' : '');
-    }
-
-    // Poll every 10 seconds
-    setInterval(pollNotifications, 10000);
-
-    // Track existing order ID for adding items
     let quickCart = [];
     let isQuickOrderCreating = false;
     let selectedOrderType = 'dine_in';
@@ -1209,6 +1171,11 @@
             name: card.dataset.tableName
         };
         document.getElementById('proceedToItemsBtn').disabled = false;
+
+        // Auto-proceed to items for dine_in orders
+        if (selectedOrderType === 'dine_in') {
+            proceedToItems();
+        }
     }
 
     function proceedToItems() {
@@ -1257,7 +1224,6 @@
 
     function openAddItemsModal(tableId, tableName, orderId = null) {
         currentTable = { id: tableId, name: tableName };
-        currentOrderId = orderId; // Track existing order ID
         document.getElementById('selectedTableName').textContent = tableName;
         cart = [];
         updateCartDisplay();
@@ -1390,7 +1356,15 @@
                     </td>
                     <td>${item.quantity}</td>
                     <td class="item-rate">Rs ${parseFloat(item.unit_price).toFixed(2)}</td>
-                    <td>0.00</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <select class="form-select form-select-sm" style="width: 50px; font-size: 10px; padding: 2px 4px;" onchange="updateItemDiscountType(this, '${item.menu_item_id}-${item.size}')">
+                                <option value="rs">Rs</option>
+                                <option value="percent">%</option>
+                            </select>
+                            <input type="number" class="form-control form-control-sm" style="width: 50px; font-size: 10px; padding: 2px 4px;" value="0" min="0" step="0.01" onchange="updateItemDiscount(this, '${item.menu_item_id}-${item.size}')" data-discount-type="rs">
+                        </div>
+                    </td>
                     <td class="item-total">Rs ${parseFloat(item.unit_price * item.quantity).toFixed(2)}</td>
                     <td>
                         <button class="btn btn-sm" style="padding: 2px 6px; font-size: 10px; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 2px;" onclick="deleteCheckoutItem('${item.menu_item_id}-${item.size}')">
@@ -1457,6 +1431,10 @@
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6b7280;">
                             <span>Item Total</span>
                             <span>Rs ${parseFloat(data.subtotal || 0).toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6b7280;">
+                            <span>Discount</span>
+                            <span style="color: #dc2626;">-Rs <span id="totalDiscount">0.00</span></span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px; color: #6b7280;">
                             <span>Service Charge</span>
@@ -1582,17 +1560,54 @@
     function recalculateTotals() {
         const rows = document.querySelectorAll('#checkoutContent tbody tr');
         let itemTotal = 0;
+        let itemDiscount = 0;
 
         rows.forEach(row => {
+            const rateCell = row.querySelector('.item-rate');
+            const quantity = parseFloat(row.dataset.quantity) || 1;
+            const discountInput = row.querySelector('input[type="number"]');
+            const discountType = discountInput ? discountInput.dataset.discountType : 'rs';
+            const discountValue = parseFloat(discountInput?.value) || 0;
             const totalCell = row.querySelector('.item-total');
-            if (totalCell) {
-                const total = parseFloat(totalCell.textContent.replace('Rs ', '')) || 0;
-                itemTotal += total;
+
+            if (rateCell) {
+                const rate = parseFloat(rateCell.textContent.replace('Rs ', '')) || 0;
+                const baseTotal = rate * quantity;
+                let discount = 0;
+
+                if (discountType === 'percent') {
+                    discount = baseTotal * (discountValue / 100);
+                } else {
+                    discount = discountValue;
+                }
+
+                const finalTotal = baseTotal - discount;
+                itemTotal += finalTotal;
+                itemDiscount += discount;
+
+                if (totalCell) {
+                    totalCell.textContent = 'Rs ' + finalTotal.toFixed(2);
+                }
             }
         });
 
+        // Calculate global discount
+        const globalDiscountType = document.getElementById('globalDiscountType')?.value || 'rs';
+        const globalDiscountValue = parseFloat(document.getElementById('globalDiscountValue')?.value) || 0;
+        let globalDiscount = 0;
+
+        if (globalDiscountType === 'percent') {
+            globalDiscount = itemTotal * (globalDiscountValue / 100);
+        } else {
+            globalDiscount = globalDiscountValue;
+        }
+
+        const totalDiscount = itemDiscount + globalDiscount;
+        const grandTotal = itemTotal - globalDiscount;
+
         // Update totals display
-        const grandTotal = itemTotal;
+        document.getElementById('itemDiscount').textContent = itemDiscount.toFixed(2);
+        document.getElementById('totalDiscount').textContent = totalDiscount.toFixed(2);
         document.querySelector('#checkoutContent [style*="color: #059669"]').textContent = 'Rs ' + grandTotal.toFixed(2);
 
         // Update tender amount if paid
@@ -1602,6 +1617,17 @@
 
         // Update change due
         calculateChangeDue();
+    }
+
+    function updateItemDiscountType(select, itemKey) {
+        const row = document.querySelector(`tr[data-item-key="${itemKey}"]`);
+        const input = row.querySelector('input[type="number"]');
+        input.dataset.discountType = select.value;
+        recalculateTotals();
+    }
+
+    function updateItemDiscount(input, itemKey) {
+        recalculateTotals();
     }
 
     function calculateChangeDue() {
@@ -1734,15 +1760,108 @@
             });
             const data = await response.json();
             if (data.success) {
-                alert('Checkout completed successfully!');
+                // Hide checkout modal
                 bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-                location.reload();
+                
+                // Show success modal
+                showCheckoutSuccessModal(data);
             } else {
                 alert(data.message || 'Checkout failed');
             }
         } catch (error) {
             alert('Network error occurred');
         }
+    }
+
+    function showCheckoutSuccessModal(data) {
+        // Check if order_id exists
+        if (!data.order_id) {
+            console.error('Order ID missing from checkout response', data);
+            alert('Checkout completed but order ID not found. Please refresh the page.');
+            setTimeout(() => location.reload(), 1000);
+            return;
+        }
+
+        // Create success modal if it doesn't exist
+        let modalHtml = `
+            <div class="modal fade" id="checkoutSuccessModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius: 12px; border: none;">
+                        <div class="modal-body text-center p-4">
+                            <div style="width: 80px; height: 80px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <h4 style="font-weight: 700; color: #1f2937; margin-bottom: 8px;">Payment Successful</h4>
+                            <p style="color: #6b7280; margin-bottom: 16px;">
+                                Bill #${data.invoice_number || 'N/A'}<br>
+                                Payment: ${data.tenant ? data.tenant.name : 'Cash'}
+                            </p>
+                            <div class="d-flex flex-column gap-2">
+                                <button onclick="viewBill(${data.order_id})" class="btn btn-primary" style="border-radius: 8px; padding: 10px;">
+                                    <i class="bi bi-eye me-2"></i>View Bill
+                                </button>
+                                <button onclick="printBill(${data.order_id})" class="btn btn-outline-primary" style="border-radius: 8px; padding: 10px;">
+                                    <i class="bi bi-printer me-2"></i>Print Bill
+                                </button>
+                                <button onclick="downloadBillPdf(${data.order_id})" class="btn btn-outline-secondary" style="border-radius: 8px; padding: 10px;">
+                                    <i class="bi bi-download me-2"></i>Download PDF
+                                </button>
+                                <button onclick="closeCheckoutSuccess()" class="btn btn-light" style="border-radius: 8px; padding: 10px; border: 1px solid #e5e7eb;">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remove existing modal if present
+        const existingModal = document.getElementById('checkoutSuccessModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Add new modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('checkoutSuccessModal'));
+        modal.show();
+    }
+
+    function viewBill(orderId) {
+        if (!orderId) {
+            alert('Order ID not found');
+            return;
+        }
+        window.open(`/admin/orders/${orderId}/view-bill`, '_blank');
+    }
+
+    function printBill(orderId) {
+        if (!orderId) {
+            alert('Order ID not found');
+            return;
+        }
+        window.open(`/admin/orders/${orderId}/view-bill`, '_blank');
+    }
+
+    function downloadBillPdf(orderId) {
+        if (!orderId) {
+            alert('Order ID not found');
+            return;
+        }
+        window.location.href = `/admin/orders/${orderId}/download-bill-pdf`;
+    }
+
+    function closeCheckoutSuccess() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('checkoutSuccessModal'));
+        if (modal) {
+            modal.hide();
+        }
+        setTimeout(() => location.reload(), 300);
     }
 
     // Add tender amount input listener
@@ -1902,6 +2021,7 @@
                 quickCart = []; updateQuickCartDisplay();
                 bootstrap.Modal.getInstance(document.getElementById('quickBillingModal')).hide();
                 loadRecentOrders();
+                loadKOTs(); // Auto-refresh KOT section
                 setTimeout(() => location.reload(), 800);
             } else { showToast('error', d.message); }
         } catch (e) { showToast('error', 'Failed to create quick order'); }
@@ -1999,10 +2119,8 @@
         btn.querySelector('.spinner-border').classList.remove('d-none');
         btn.querySelector('.btn-text').classList.add('d-none');
         try {
-            // Check if adding to existing order
-            const url = currentOrderId ? `/admin/orders/${currentOrderId}/add-items` : '/admin/orders';
-            const r = await fetch(url, {
-                method: currentOrderId ? 'PUT' : 'POST',
+            const r = await fetch('/admin/orders', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
                 body: JSON.stringify({
                     table_id: currentTable.id,
@@ -2014,9 +2132,8 @@
             });
             const d = await r.json();
             if (d.success) {
-                showToast('success', currentOrderId ? 'Items added to order' : 'Order created');
+                showToast('success', 'Order created');
                 cart = []; updateCartDisplay();
-                currentOrderId = null; // Reset
                 bootstrap.Modal.getInstance(document.getElementById('addItemsModal')).hide();
                 loadRecentOrders();
                 loadKOTs(); // Auto-refresh KOT section
@@ -2046,7 +2163,7 @@
             const ct = document.getElementById('kotList');
             if (!d.success || !d.orders.length) { ct.innerHTML = '<div class="col-12"><p class="text-center text-muted py-4">No active KOTs</p></div>'; return; }
             ct.innerHTML = d.orders.map(order => `
-                <div class="col-md-4">
+                <div class="col-3">
                     <div class="kot-card-new">
                         <div class="kot-hd">
                             <div class="d-flex justify-content-between align-items-center">
@@ -2161,7 +2278,6 @@
                     return `<div class="order-section ${orderIndex > 0 ? 'border-top pt-2 mt-2' : ''}">
                         <div class="order-id">#${order.order_no || 'ORD-' + order.id}</div>
                         <div class="order-header">
-                            ${order.order_source === 'qr' ? '<span class="badge bg-primary me-2">QR ORDER</span>' : ''}
                             <span class="order-status-badge status-${order.status}">${order.status}</span>
                             <span class="order-time">${order.created_at}</span>
                         </div>
@@ -2183,7 +2299,7 @@
                     </div>`;
                 }).join('') : '<p class="text-muted small py-2 mb-0">No recent orders</p>';
 
-                return `<div class="col-xl-3 col-lg-4 col-md-6">
+                return `<div class="col-3">
                     <div class="order-card-compact">
                         <div class="order-card-header">
                             <h6 class="table-name">${table.name}</h6>
@@ -2202,95 +2318,6 @@
 
     function formatDate(ds) {
         return new Date(ds).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-    }
-
-    async function viewOrderDetails(orderId) {
-        try {
-            const r = await fetch(`/admin/orders/${orderId}/details`, {
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
-            });
-            const d = await r.json();
-            if (d.success) {
-                showOrderDetailsModal(d.order);
-            } else {
-                showToast('error', d.message);
-            }
-        } catch(e) {
-            showToast('error', 'Failed to load order details');
-        }
-    }
-
-    function showOrderDetailsModal(order) {
-        const itemsHtml = order.items.map(item => `
-            <tr>
-                <td>${item.name}</td>
-                <td>${item.size === 0.5 ? 'Half' : item.size === 1 ? 'Full' : 'Full'}</td>
-                <td>${item.quantity}</td>
-                <td>Rs ${parseFloat(item.unit_price).toFixed(2)}</td>
-                <td>Rs ${parseFloat(item.unit_price * item.quantity).toFixed(2)}</td>
-                <td><span class="badge ${item.status === 'pending' ? 'bg-warning' : item.status === 'served' ? 'bg-success' : 'bg-secondary'}">${item.status}</span></td>
-            </tr>
-        `).join('');
-
-        const modalHtml = `
-            <div class="modal fade" id="orderDetailsModal" tabindex="-1">
-                <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Order #${order.order_no}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <strong>Table:</strong> ${order.table?.name || 'N/A'}
-                                </div>
-                                <div class="col-md-6">
-                                    <strong>Status:</strong> <span class="badge bg-${order.status === 'completed' ? 'success' : order.status === 'cancelled' ? 'danger' : 'warning'}">${order.status}</span>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <strong>Order Type:</strong> ${order.order_type || 'Dine In'}
-                                </div>
-                                <div class="col-md-6">
-                                    <strong>Created:</strong> ${new Date(order.created_at).toLocaleString()}
-                                </div>
-                            </div>
-                            <h6 class="mt-4 mb-3">Order Items</h6>
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Size</th>
-                                        <th>Qty</th>
-                                        <th>Rate</th>
-                                        <th>Total</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${itemsHtml}
-                                </tbody>
-                            </table>
-                            <div class="mt-3 text-end">
-                                <strong>Total: Rs ${parseFloat(order.total_amount).toFixed(2)}</strong>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const existingModal = document.getElementById('orderDetailsModal');
-        if (existingModal) existingModal.remove();
-
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
-        modal.show();
     }
 
     // ── Modern Confirmation Modal ──

@@ -105,6 +105,70 @@
         width: 16px !important;
         height: 16px !important;
     }
+    /* Explicit submenu icon rules for child menu items */
+    .navbar-vertical .collapse .nav-item .nav-link {
+        display: flex !important;
+        align-items: center !important;
+    }
+    .navbar-vertical .collapse .nav-item .nav-link::before {
+        content: "";
+        display: inline-block !important;
+        width: 6px !important;
+        height: 6px !important;
+        min-width: 6px !important;
+        min-height: 6px !important;
+        border-radius: 50% !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        margin-right: 0.7rem !important;
+        flex-shrink: 0 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    .navbar-vertical .collapse .nav-item .nav-link i,
+    .navbar-vertical .collapse .nav-item .nav-link svg,
+    .navbar-vertical .collapse .nav-item .nav-link [data-feather],
+    .navbar-vertical .collapse .nav-item .nav-link .icon-xs {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 14px !important;
+        height: 14px !important;
+        min-width: 14px !important;
+        min-height: 14px !important;
+        flex-shrink: 0 !important;
+        margin-right: 0.5rem !important;
+    }
+    /* Compact submenu layout to avoid stretched sidebar when expanded */
+    .navbar-vertical .collapse {
+        margin-top: 0.15rem;
+        overflow: hidden;
+    }
+    .navbar-vertical .collapse .nav {
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+        margin-top: 0.1rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+    .navbar-vertical .collapse .nav-item {
+        margin: 0 !important;
+    }
+    .navbar-vertical .collapse .nav-item .nav-link {
+        padding: 0.38rem 0.75rem 0.38rem 2.2rem !important;
+        margin: 0 0.35rem 0.12rem !important;
+        font-size: 0.84rem !important;
+        line-height: 1.35 !important;
+        border-radius: 6px !important;
+    }
+    .navbar-vertical .collapse .nav-item .nav-link i,
+    .navbar-vertical .collapse .nav-item .nav-link svg {
+        width: 14px !important;
+        height: 14px !important;
+        min-width: 14px !important;
+        min-height: 14px !important;
+    }
+    .navbar-vertical .nav-scroller {
+        overflow-x: hidden;
+    }
     /* Ultra-specific rules for submenu icons */
     nav.navbar-vertical ul li a i[data-feather],
     nav.navbar-vertical ul li a svg.feather,
@@ -187,7 +251,7 @@
                 <?php if($currentTenant && $currentTenant->logo): ?>
                     <img src="<?php echo e($currentTenant->logo); ?>" alt="<?php echo e($currentTenant->name); ?>" class="me-2" style="height: 32px;">
                 <?php else: ?>
-                    <i data-feather="utensils" class="me-2"></i>
+                    <i data-feather="coffee" class="me-2"></i>
                 <?php endif; ?>
                 <div>
                     <span class="d-block fw-bold"><?php echo e($currentTenant->name ?? 'Restaurant'); ?></span>
@@ -228,48 +292,7 @@
                 </a>
             </li>
 
-            <!-- 2. POS -->
-            <li class="nav-item">
-                <a class="nav-link has-arrow <?php echo e($isSubmenuActive(['admin.orders.pos']) ? 'active' : ''); ?>"
-                   href="#!" data-bs-toggle="collapse" data-bs-target="#navPOS"
-                   aria-expanded="<?php echo e($isSubmenuActive(['admin.orders.pos']) ? 'true' : 'false'); ?>" aria-controls="navPOS">
-                    <i data-feather="shopping-cart" class="nav-icon icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> POS
-                    <span class="nav-arrow ms-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important;"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </span>
-                </a>
-                <div id="navPOS" class="collapse <?php echo e($isSubmenuActive(['admin.orders.pos']) ? 'show' : ''); ?>">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo e(request()->routeIs('admin.orders.pos') ? 'active' : ''); ?>" href="<?php echo e(route('admin.orders.pos')); ?>">
-                                <i data-feather="circle" class="icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> POS Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php echo e(route('admin.orders.pos')); ?>">
-                                <i data-feather="circle" class="icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> New POS Order
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo e(request()->routeIs('admin.orders.index') ? 'active' : ''); ?>" href="<?php echo e(route('admin.orders.index')); ?>">
-                                <i data-feather="circle" class="icon-xs me-2"></i> POS Orders
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i data-feather="circle" class="icon-xs me-2"></i> Held Orders
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo e(request()->routeIs('admin.pos-settings.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.pos-settings.index')); ?>">
-                                <i data-feather="circle" class="icon-xs me-2"></i> POS Settings
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-
-            <!-- 3. Orders -->
+            <!-- 2. Orders -->
             <li class="nav-item">
                 <a class="nav-link has-arrow <?php echo e($isSubmenuActive(['admin.orders.*']) && !$isSubmenuActive(['admin.orders.pos']) ? 'active' : ''); ?>"
                    href="#!" data-bs-toggle="collapse" data-bs-target="#navOrders"
@@ -314,6 +337,47 @@
                         <li class="nav-item">
                             <a class="nav-link <?php echo e(request()->routeIs('admin.orders.history') ? 'active' : ''); ?>" href="<?php echo e(route('admin.orders.history')); ?>">
                                 <i data-feather="clock" class="icon-xs me-2"></i> Order History
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- 3. POS -->
+            <li class="nav-item">
+                <a class="nav-link has-arrow <?php echo e($isSubmenuActive(['admin.orders.pos']) ? 'active' : ''); ?>"
+                   href="#!" data-bs-toggle="collapse" data-bs-target="#navPOS"
+                   aria-expanded="<?php echo e($isSubmenuActive(['admin.orders.pos']) ? 'true' : 'false'); ?>" aria-controls="navPOS">
+                    <i data-feather="shopping-cart" class="nav-icon icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> POS
+                    <span class="nav-arrow ms-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </a>
+                <div id="navPOS" class="collapse <?php echo e($isSubmenuActive(['admin.orders.pos']) ? 'show' : ''); ?>">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo e(request()->routeIs('admin.orders.pos') ? 'active' : ''); ?>" href="<?php echo e(route('admin.orders.pos')); ?>">
+                                <i data-feather="circle" class="icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> POS Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?php echo e(route('admin.orders.pos')); ?>">
+                                <i data-feather="circle" class="icon-xs me-2" style="display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; min-width: 16px !important; min-height: 16px !important;"></i> New POS Order
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo e(request()->routeIs('admin.orders.index') ? 'active' : ''); ?>" href="<?php echo e(route('admin.orders.index')); ?>">
+                                <i data-feather="circle" class="icon-xs me-2"></i> POS Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i data-feather="circle" class="icon-xs me-2"></i> Held Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo e(request()->routeIs('admin.pos-settings.*') ? 'active' : ''); ?>" href="<?php echo e(route('admin.pos-settings.index')); ?>">
+                                <i data-feather="circle" class="icon-xs me-2"></i> POS Settings
                             </a>
                         </li>
                     </ul>
@@ -577,7 +641,7 @@
                 <div id="navInventory" class="collapse <?php echo e($isSubmenuActive(['admin.products.*', 'admin.stock-adjustments.*', 'admin.wastages.*', 'admin.kitchen-consumptions.*']) ? 'show' : ''); ?>">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link <?php echo e(request()->routeIs('admin.inventory.dashboard') ? 'active' : ''); ?>" href="<?php echo e(route('admin.inventory.dashboard')); ?>">
                                 <i data-feather="bar-chart-2" class="icon-xs me-2"></i> Inventory Dashboard
                             </a>
                         </li>
