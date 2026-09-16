@@ -253,13 +253,30 @@ class QrOrderController extends Controller
             'table_id' => 'required|integer',
         ]);
 
+        \Log::info('Call waiter request received', [
+            'tenant_slug' => $validated['tenant_slug'],
+            'table_id' => $validated['table_id'],
+        ]);
+
         $tenant = Tenant::where('slug', $validated['tenant_slug'])
             ->where('status', 'active')
             ->firstOrFail();
 
+        \Log::info('Tenant found', [
+            'tenant_id' => $tenant->id,
+            'tenant_name' => $tenant->name,
+            'tenant_slug' => $tenant->slug,
+        ]);
+
         $table = Table::where('id', $validated['table_id'])
             ->where('tenant_id', $tenant->id)
             ->firstOrFail();
+
+        \Log::info('Table found', [
+            'table_id' => $table->id,
+            'table_name' => $table->name,
+            'table_tenant_id' => $table->tenant_id,
+        ]);
 
         // Check if there's already a pending call for this table
         $existingCall = WaiterCall::withoutGlobalScopes()
@@ -284,6 +301,12 @@ class QrOrderController extends Controller
 
         // Create notification for staff
         try {
+            \Log::info('Creating waiter call notification', [
+                'tenant_id' => $tenant->id,
+                'table_id' => $table->id,
+                'table_name' => $table->name,
+            ]);
+
             $notification = Notification::create([
                 'tenant_id' => $tenant->id,
                 'type' => 'waiter_call',
@@ -297,10 +320,9 @@ class QrOrderController extends Controller
                 'read' => false,
             ]);
             
-            \Log::info('Waiter call notification created', [
+            \Log::info('Waiter call notification created successfully', [
                 'notification_id' => $notification->id,
-                'tenant_id' => $tenant->id,
-                'table_id' => $table->id,
+                'tenant_id' => $notification->tenant_id,
                 'notification_data' => $notification->toArray(),
             ]);
         } catch (\Exception $e) {
