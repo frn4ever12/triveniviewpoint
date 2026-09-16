@@ -105,19 +105,41 @@ class NotificationController extends Controller
 
     public function testCreate(Request $request)
     {
-        $notification = Notification::create([
-            'tenant_id' => auth()->user()->tenant_id,
-            'type' => 'test',
-            'title' => 'Test Notification',
-            'message' => 'This is a test notification created at ' . now()->format('H:i:s'),
-            'data' => json_encode(['test' => true]),
-            'read' => false,
-        ]);
+        try {
+            \Log::info('Test notification creation started', [
+                'tenant_id' => auth()->user()->tenant_id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'notification' => $notification,
-            'tenant_id' => auth()->user()->tenant_id,
-        ]);
+            $notification = Notification::create([
+                'tenant_id' => auth()->user()->tenant_id,
+                'type' => 'test',
+                'title' => 'Test Notification',
+                'message' => 'This is a test notification created at ' . now()->format('H:i:s'),
+                'data' => json_encode(['test' => true]),
+                'read' => false,
+            ]);
+
+            \Log::info('Test notification created successfully', [
+                'notification_id' => $notification->id,
+                'tenant_id' => $notification->tenant_id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'notification' => $notification,
+                'tenant_id' => auth()->user()->tenant_id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Test notification creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
