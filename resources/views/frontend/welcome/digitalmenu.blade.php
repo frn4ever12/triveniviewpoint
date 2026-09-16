@@ -1025,9 +1025,46 @@
         document.getElementById('callWaiterModal').classList.remove('show');
     }
 
-    function confirmCallWaiter() {
-        closeCallWaiterModal();
-        showToast('Waiter has been notified!');
+    async function confirmCallWaiter() {
+        @if(isset($tenant))
+            const tenantSlug = '{{ $tenant->slug }}';
+        @else
+            const tenantSlug = 'demo-restaurant';
+        @endif
+        
+        @if(isset($tableRecord))
+            const tableId = {{ $tableRecord->id }};
+        @else
+            const tableId = 1;
+        @endif
+
+        const callData = {
+            tenant_slug: tenantSlug,
+            table_id: tableId
+        };
+
+        try {
+            const response = await fetch('/api/qr/call-waiter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(callData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                closeCallWaiterModal();
+                showToast('Waiter has been notified!');
+            } else {
+                showToast(result.message || 'Failed to call waiter');
+            }
+        } catch (error) {
+            console.error('Error calling waiter:', error);
+            showToast('Failed to call waiter. Please try again.');
+        }
     }
 
     // Notifications

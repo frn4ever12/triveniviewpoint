@@ -395,7 +395,44 @@
                 <h4 class="fw-bold mb-1">Dashboard</h4>
                 <p class="text-muted mb-0">{{ auth()->user()?->tenant?->name ?? 'Restaurant' }} - Restaurant Management Overview</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center">
+                <!-- Notifications -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary position-relative" type="button" data-bs-toggle="dropdown">
+                        <i data-feather="bell" class="icon-xs"></i>
+                        @if($unreadNotifications->count() > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7rem;">
+                            {{ $unreadNotifications->count() }}
+                        </span>
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                        <li class="dropdown-header">
+                            <strong>Notifications</strong>
+                            @if($unreadNotifications->count() > 0)
+                            <a href="#" class="float-end text-decoration-none" onclick="markAllRead(event)">Mark all read</a>
+                            @endif
+                        </li>
+                        @if($unreadNotifications->count() > 0)
+                            @foreach($unreadNotifications as $notification)
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="markRead({{ $notification->id }}, event)">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i data-feather="{{ $notification->type == 'waiter_call' ? 'bell' : 'shopping-cart' }}" class="icon-xs text-primary"></i>
+                                        <div>
+                                            <strong class="d-block">{{ $notification->title }}</strong>
+                                            <small class="text-muted">{{ $notification->message }}</small>
+                                            <small class="text-muted d-block">{{ $notification->created_at->diffForHumans() }}</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                            @endforeach
+                        @else
+                            <li><span class="dropdown-item text-muted">No new notifications</span></li>
+                        @endif
+                    </ul>
+                </div>
                 <a href="{{ route('admin.orders.pos') }}" class="btn btn-primary">
                     <i data-feather="shopping-cart" class="icon-xs me-1"></i> POS
                 </a>
@@ -819,6 +856,58 @@
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
         feather.replace();
+
+        // Notification functions
+        function markRead(notificationId, event) {
+            event.preventDefault();
+            fetch('/api/notifications/' + notificationId + '/read', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(() => {
+                location.reload();
+            });
+        }
+
+        function markAllRead(event) {
+            event.preventDefault();
+            fetch('/api/notifications/mark-all-read', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(() => {
+                location.reload();
+            });
+        }
+
+        // Poll for new notifications and play bell sound
+        let lastNotificationCount = {{ $unreadNotifications->count() }};
+
+        setInterval(() => {
+            fetch('/api/notifications/unread-count')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.count > lastNotificationCount) {
+                        // Play bell sound
+                        const audio = new Audio('{{ asset('assets/sounds/bell.mp3') }}');
+                        audio.play().catch(e => console.log('Audio play failed:', e));
+                        
+                        // Show toast
+                        const toast = document.createElement('div');
+                        toast.className = 'alert alert-info position-fixed';
+                        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                        toast.innerHTML = '<i data-feather="bell" class="icon-xs"></i> New notification received!';
+                        document.body.appendChild(toast);
+                        feather.replace();
+                        setTimeout(() => toast.remove(), 5000);
+                        
+                        lastNotificationCount = data.count;
+                        location.reload();
+                    }
+                });
+        }, 10000); // Check every 10 seconds
         
         // Sales Trend Chart
         new Chart(document.getElementById('salesTrendChart').getContext('2d'), {

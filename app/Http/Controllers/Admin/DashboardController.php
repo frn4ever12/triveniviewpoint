@@ -129,11 +129,19 @@ class DashboardController extends Controller
                 ->sum('total_amount');
         }        
 
+        // Get unread notifications
+        $unreadNotifications = \App\Models\Notification::withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->where('read', false)
+            ->latest()
+            ->take(10)
+            ->get();
+
         return view('dashboard',
         compact('tables','orders','orderitems','latestOrders',
         'statusCounts','latestTables','ordersToday','ordersYesterday','ordersChange','totalTables',
         'occupiedTables','occupancyPercent','todaysRevenue','revenueChange','weekLabels',
-        'weekRevenue','trialDaysLeft','showTrialNotice'));
+        'weekRevenue','trialDaysLeft','showTrialNotice','unreadNotifications'));
     }
 
     public function getTodaysDishRevenue(Request $request)

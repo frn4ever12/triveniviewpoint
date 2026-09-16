@@ -39,6 +39,26 @@ class NotificationController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function markRead($id)
+    {
+        return $this->markAsRead($id);
+    }
+
+    public function markAllRead()
+    {
+        return $this->markAllAsRead();
+    }
+
+    public function unreadCount()
+    {
+        $count = Notification::withoutGlobalScopes()
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->where('read', false)
+            ->count();
+
+        return response()->json(['count' => $count]);
+    }
+
     public function markAllAsRead()
     {
         Notification::withoutGlobalScopes()
