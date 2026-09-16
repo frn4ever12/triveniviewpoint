@@ -171,4 +171,24 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+    public function waiterCalls()
+    {
+        try {
+            $waiterCallNotifications = Notification::where('type', 'waiter_call')
+                ->where('tenant_id', 1)
+                ->latest()
+                ->take(10)
+                ->get();
+
+            return response()->json([
+                'count' => $waiterCallNotifications->count(),
+                'notifications' => $waiterCallNotifications,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

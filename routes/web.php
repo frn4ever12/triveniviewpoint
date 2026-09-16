@@ -47,6 +47,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Debug notifications table
     Route::get('/api/notifications/debug', [App\Http\Controllers\Admin\NotificationController::class, 'debug'])->name('notifications.debug');
+    
+    // Check waiter call notifications
+    Route::get('/api/notifications/waiter-calls', [App\Http\Controllers\Admin\NotificationController::class, 'waiterCalls'])->name('notifications.waiterCalls');
 });
 
 // Checkout Route
