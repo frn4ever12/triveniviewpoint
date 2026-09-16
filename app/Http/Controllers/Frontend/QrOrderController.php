@@ -283,18 +283,32 @@ class QrOrderController extends Controller
         ]);
 
         // Create notification for staff
-        Notification::create([
-            'tenant_id' => $tenant->id,
-            'type' => 'waiter_call',
-            'title' => 'Waiter Call',
-            'message' => "Table {$table->name} - Customer is requesting assistance",
-            'data' => json_encode([
-                'waiter_call_id' => $waiterCall->id,
+        try {
+            $notification = Notification::withoutGlobalScopes()->create([
+                'tenant_id' => $tenant->id,
+                'type' => 'waiter_call',
+                'title' => 'Waiter Call',
+                'message' => "Table {$table->name} - Customer is requesting assistance",
+                'data' => json_encode([
+                    'waiter_call_id' => $waiterCall->id,
+                    'table_id' => $table->id,
+                    'table_name' => $table->name,
+                ]),
+                'read' => false,
+            ]);
+            
+            \Log::info('Waiter call notification created', [
+                'notification_id' => $notification->id,
+                'tenant_id' => $tenant->id,
                 'table_id' => $table->id,
-                'table_name' => $table->name,
-            ]),
-            'read' => false,
-        ]);
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create waiter call notification', [
+                'error' => $e->getMessage(),
+                'tenant_id' => $tenant->id,
+                'table_id' => $table->id,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
