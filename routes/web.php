@@ -44,6 +44,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Test notification creation
     Route::post('/api/notifications/test', [App\Http\Controllers\Admin\NotificationController::class, 'testCreate'])->name('notifications.test');
+    
+    // Debug notifications table
+    Route::get('/api/notifications/debug', [App\Http\Controllers\Admin\NotificationController::class, 'debug'])->name('notifications.debug');
 });
 
 // Checkout Route

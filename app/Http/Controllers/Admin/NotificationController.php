@@ -142,4 +142,33 @@ class NotificationController extends Controller
             ], 500);
         }
     }
+
+    public function debug()
+    {
+        try {
+            $tableExists = \Schema::hasTable('notifications');
+            $totalNotifications = Notification::count();
+            $tenantNotifications = Notification::where('tenant_id', auth()->user()->tenant_id)->count();
+            $unreadNotifications = Notification::where('tenant_id', auth()->user()->tenant_id)->where('read', false)->count();
+            
+            $recentNotifications = Notification::where('tenant_id', auth()->user()->tenant_id)
+                ->latest()
+                ->take(5)
+                ->get();
+
+            return response()->json([
+                'table_exists' => $tableExists,
+                'total_notifications' => $totalNotifications,
+                'tenant_notifications' => $tenantNotifications,
+                'unread_notifications' => $unreadNotifications,
+                'user_tenant_id' => auth()->user()->tenant_id,
+                'recent_notifications' => $recentNotifications,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
+        }
+    }
 }
