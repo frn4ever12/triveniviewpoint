@@ -11,14 +11,12 @@ class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = Notification::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $notifications = Notification::where('tenant_id', auth()->user()->tenant_id)
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
 
-        $unreadCount = Notification::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $unreadCount = Notification::where('tenant_id', auth()->user()->tenant_id)
             ->where('read', false)
             ->count();
 
@@ -30,8 +28,7 @@ class NotificationController extends Controller
 
     public function markAsRead($id)
     {
-        $notification = Notification::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $notification = Notification::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
 
         $notification->update(['read' => true]);
@@ -51,8 +48,7 @@ class NotificationController extends Controller
 
     public function unreadCount()
     {
-        $count = Notification::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $count = Notification::where('tenant_id', auth()->user()->tenant_id)
             ->where('read', false)
             ->count();
 
@@ -61,8 +57,7 @@ class NotificationController extends Controller
 
     public function markAllAsRead()
     {
-        Notification::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        Notification::where('tenant_id', auth()->user()->tenant_id)
             ->where('read', false)
             ->update(['read' => true]);
 
@@ -71,8 +66,7 @@ class NotificationController extends Controller
 
     public function getWaiterCalls()
     {
-        $waiterCalls = WaiterCall::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $waiterCalls = WaiterCall::where('tenant_id', auth()->user()->tenant_id)
             ->where('status', 'pending')
             ->with(['table', 'attendedBy'])
             ->orderBy('created_at', 'desc')
@@ -85,8 +79,7 @@ class NotificationController extends Controller
 
     public function attendWaiterCall($id)
     {
-        $waiterCall = WaiterCall::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $waiterCall = WaiterCall::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
 
         $waiterCall->update([
@@ -100,8 +93,7 @@ class NotificationController extends Controller
 
     public function completeWaiterCall($id)
     {
-        $waiterCall = WaiterCall::withoutGlobalScopes()
-            ->where('tenant_id', auth()->user()->tenant_id)
+        $waiterCall = WaiterCall::where('tenant_id', auth()->user()->tenant_id)
             ->findOrFail($id);
 
         $waiterCall->update([

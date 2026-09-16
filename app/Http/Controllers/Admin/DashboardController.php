@@ -130,8 +130,7 @@ class DashboardController extends Controller
         }        
 
         // Get unread notifications
-        $unreadNotifications = \App\Models\Notification::withoutGlobalScopes()
-            ->where('tenant_id', $tenantId)
+        $unreadNotifications = \App\Models\Notification::where('tenant_id', $tenantId)
             ->where('read', false)
             ->latest()
             ->take(10)

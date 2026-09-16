@@ -284,7 +284,7 @@ class QrOrderController extends Controller
 
         // Create notification for staff
         try {
-            $notification = Notification::withoutGlobalScopes()->create([
+            $notification = Notification::create([
                 'tenant_id' => $tenant->id,
                 'type' => 'waiter_call',
                 'title' => 'Waiter Call',
