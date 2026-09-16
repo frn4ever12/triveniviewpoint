@@ -363,6 +363,39 @@ class QrOrderController extends Controller
         ]);
     }
 
+    public function testNotification(Request $request)
+    {
+        try {
+            // Create test notification with tenant_id 1
+            $notification = Notification::create([
+                'tenant_id' => 1,
+                'type' => 'test',
+                'title' => 'Test Notification from QR',
+                'message' => 'Test notification from QR menu at ' . now()->format('H:i:s'),
+                'data' => json_encode(['test' => true, 'source' => 'qr_menu']),
+                'read' => false,
+            ]);
+
+            \Log::info('Test notification created from QR menu', [
+                'notification_id' => $notification->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test notification created',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create test notification from QR menu', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getWaiterCallStatus(Request $request)
     {
         $validated = $request->validate([

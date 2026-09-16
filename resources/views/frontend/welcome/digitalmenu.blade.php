@@ -676,6 +676,11 @@
                 <button class="dm-action-btn" style="flex: 1; padding: 0.75rem;" onclick="closeCallWaiterModal()">Cancel</button>
                 <button class="dm-view-cart-btn" style="flex: 1;" onclick="confirmCallWaiter()">Call Waiter</button>
             </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <button onclick="testNotification()" style="background: #f59e0b; border: none; padding: 0.5rem 1rem; border-radius: 8px; color: white; font-size: 0.8rem;">
+                    🔔 Test Notification
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1069,6 +1074,29 @@
             console.error('Error calling waiter:', error);
             showToast('Failed to call waiter. Please try again.');
         }
+    }
+
+    // Test notification function
+    function testNotification() {
+        console.log('Testing notification from QR menu');
+        
+        fetch('/api/qr/test-notification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        }).then(r => r.json()).then(data => {
+            console.log('Test notification response:', data);
+            if (data.success) {
+                alert('✓ Test notification created! Check admin dashboard.');
+            } else {
+                alert('✗ Failed: ' + (data.error || data.message || 'Unknown error'));
+            }
+        }).catch(err => {
+            console.error('Test notification error:', err);
+            alert('✗ Error: ' + err.message);
+        });
     }
 
     // Notifications

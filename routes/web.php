@@ -36,6 +36,9 @@ Route::post('/api/qr/order', [QrOrderController::class, 'placeOrder'])->name('qr
 // Call Waiter API Route
 Route::post('/api/qr/call-waiter', [QrOrderController::class, 'callWaiter'])->name('qr.call.waiter');
 
+// Public test notification endpoint for QR menu
+Route::post('/api/qr/test-notification', [QrOrderController::class, 'testNotification'])->name('qr.test.notification');
+
 // Notification API Routes
 Route::middleware(['auth'])->group(function () {
     Route::post('/api/notifications/{id}/read', [App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
