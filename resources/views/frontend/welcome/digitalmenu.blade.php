@@ -1081,11 +1081,7 @@
         console.log('Testing notification from QR menu');
         
         fetch('/api/qr/test-notification', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
+            method: 'GET',
         }).then(r => r.json()).then(data => {
             console.log('Test notification response:', data);
             if (data.success) {
