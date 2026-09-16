@@ -692,6 +692,78 @@
         </div>
     </div>
 
+    <!-- Cart Modal -->
+    <div class="dm-modal-overlay" id="cartModal">
+        <div class="dm-modal-content">
+            <div class="dm-modal-header">
+                <h3>🛒 Your Cart</h3>
+                <button class="dm-modal-close" onclick="closeCartModal()">&times;</button>
+            </div>
+            <div class="dm-modal-body">
+                <div id="cartItemsList"></div>
+                <div id="cartEmptyMessage" style="text-align: center; padding: 2rem; color: var(--gray-500); display: none;">
+                    <i class="bi bi-cart" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                    <p>Your cart is empty</p>
+                </div>
+            </div>
+            <div class="dm-modal-footer" id="cartFooter">
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: var(--gray-600);">Subtotal:</span>
+                        <span style="font-weight: 600;" id="cartSubtotal">Rs. 0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 700;">
+                        <span>Total:</span>
+                        <span style="color: var(--primary);" id="cartModalTotal">Rs. 0</span>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--gray-100);">
+                <button class="dm-view-cart-btn" style="width: 100%;" onclick="proceedToCheckout()">Proceed to Checkout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div class="dm-modal-overlay" id="checkoutModal">
+        <div class="dm-modal-content" style="max-width: 500px; border-radius: 20px;">
+            <div class="dm-modal-header">
+                <h3>📝 Checkout</h3>
+                <button class="dm-modal-close" onclick="closeCheckoutModal()">&times;</button>
+            </div>
+            <div class="dm-modal-body">
+                <form id="checkoutForm">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Your Name (Optional)</label>
+                        <input type="text" id="customerName" placeholder="Enter your name" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Phone Number (Optional)</label>
+                        <input type="tel" id="customerPhone" placeholder="Enter your phone number" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 0.95rem;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--gray-700);">Special Instructions (Optional)</label>
+                        <textarea id="orderNotes" placeholder="Any special requests?" rows="3" style="width: 100%; padding: 0.75rem; border: 1.5px solid var(--gray-200); border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                    </div>
+                    <div style="background: var(--gray-100); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: var(--gray-600);">Items:</span>
+                            <span style="font-weight: 600;" id="checkoutItemCount">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 700;">
+                            <span>Total:</span>
+                            <span style="color: var(--primary);" id="checkoutTotal">Rs. 0</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="dm-modal-footer" style="justify-content: center;">
+                <button class="dm-action-btn" style="flex: 1; padding: 0.75rem;" onclick="closeCheckoutModal()">Cancel</button>
+                <button class="dm-view-cart-btn" style="flex: 1;" onclick="placeOrder()">Place Order</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     // Cart Management
@@ -773,8 +845,146 @@
     }
 
     function viewCart() {
-        // Implement cart view or redirect to checkout
-        alert('Cart functionality - implement checkout flow');
+        updateCartModal();
+        document.getElementById('cartModal').classList.add('show');
+    }
+
+    function closeCartModal() {
+        document.getElementById('cartModal').classList.remove('show');
+    }
+
+    function updateCartModal() {
+        const cartItemsList = document.getElementById('cartItemsList');
+        const cartEmptyMessage = document.getElementById('cartEmptyMessage');
+        const cartFooter = document.getElementById('cartFooter');
+
+        if (cart.length === 0) {
+            cartItemsList.innerHTML = '';
+            cartEmptyMessage.style.display = 'block';
+            cartFooter.style.display = 'none';
+            return;
+        }
+
+        cartEmptyMessage.style.display = 'none';
+        cartFooter.style.display = 'block';
+
+        let html = '';
+        let subtotal = 0;
+
+        cart.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            subtotal += itemTotal;
+            html += `
+                <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--gray-100);">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--gray-800);">${item.name}</div>
+                        <div style="font-size: 0.85rem; color: var(--gray-500);">Rs. ${item.price.toFixed(2)} × ${item.quantity}</div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--primary);">Rs. ${itemTotal.toFixed(2)}</div>
+                    <button onclick="removeFromCart(${item.id})" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem;">&times;</button>
+                </div>
+            `;
+        });
+
+        cartItemsList.innerHTML = html;
+        document.getElementById('cartSubtotal').textContent = 'Rs. ' + subtotal.toFixed(2);
+        document.getElementById('cartModalTotal').textContent = 'Rs. ' + subtotal.toFixed(2);
+    }
+
+    function removeFromCart(itemId) {
+        const itemIndex = cart.findIndex(item => item.id === itemId);
+        if (itemIndex > -1) {
+            if (cart[itemIndex].quantity > 1) {
+                cart[itemIndex].quantity -= 1;
+            } else {
+                cart.splice(itemIndex, 1);
+            }
+            updateCartUI();
+            updateCartModal();
+        }
+    }
+
+    function proceedToCheckout() {
+        closeCartModal();
+        updateCheckoutModal();
+        document.getElementById('checkoutModal').classList.add('show');
+    }
+
+    function closeCheckoutModal() {
+        document.getElementById('checkoutModal').classList.remove('show');
+    }
+
+    function updateCheckoutModal() {
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        document.getElementById('checkoutItemCount').textContent = totalItems;
+        document.getElementById('checkoutTotal').textContent = 'Rs. ' + totalPrice.toFixed(2);
+    }
+
+    async function placeOrder() {
+        const customerName = document.getElementById('customerName').value;
+        const customerPhone = document.getElementById('customerPhone').value;
+        const orderNotes = document.getElementById('orderNotes').value;
+
+        if (cart.length === 0) {
+            showToast('Your cart is empty');
+            return;
+        }
+
+        // Get tenant slug from current URL path
+        const pathParts = window.location.pathname.split('/');
+        const tenantSlug = pathParts[1] || 'demo-restaurant';
+        
+        @if(isset($tableRecord))
+            const tableId = {{ $tableRecord->id }};
+        @else
+            const tableId = 1;
+        @endif
+
+        const orderData = {
+            tenant_slug: tenantSlug,
+            table_id: tableId,
+            items: cart.map(item => ({
+                menu_item_id: item.id,
+                quantity: item.quantity,
+                unit_price: item.price,
+                size: 1
+            })),
+            customer_name: customerName || null,
+            customer_phone: customerPhone || null,
+            notes: orderNotes || null
+        };
+
+        try {
+            const response = await fetch('/api/qr/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                cart = [];
+                updateCartUI();
+                closeCheckoutModal();
+                showToast('Order placed successfully! Order #' + result.order.order_no);
+                
+                // Show order confirmation
+                setTimeout(() => {
+                    alert('Order placed successfully!\n\nOrder #: ' + result.order.order_no + '\nTotal: Rs. ' + result.order.total_amount.toFixed(2) + '\n\nYour order is being prepared.');
+                }, 500);
+            } else {
+                showToast(result.message || 'Failed to place order');
+            }
+        } catch (error) {
+            console.error('Error placing order:', error);
+            showToast('Failed to place order. Please try again.');
+        }
     }
 
     function showToast(message) {

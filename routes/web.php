@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Frontend\CheckoutController;
 use App\Http\Controllers\Frontend\ContactController;
 use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\QrOrderController;
 use App\Http\Controllers\Mobile\DashboardController as MobileDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,9 @@ Route::get('/mobile/dashboard', [MobileDashboardController::class, 'index'])
 Route::get('/restaurant/{slug}', [HomeController::class, 'tenant'])->name('tenant.show');
 Route::get('/digitalmenu/{slug}', [HomeController::class, 'digitalmenu'])->name('digitalmenu');
 Route::get('/digitalmenu/{slug}/{table}', [HomeController::class, 'digitalmenuTable'])->name('digitalmenu-table');
+
+// QR Order API Route
+Route::post('/api/qr/order', [QrOrderController::class, 'placeOrder'])->name('qr.order.place');
 
 // Checkout Route
 Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardController::class, 'index'])
