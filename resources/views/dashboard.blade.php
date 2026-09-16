@@ -394,6 +394,7 @@
             <div>
                 <h4 class="fw-bold mb-1">Dashboard</h4>
                 <p class="text-muted mb-0">{{ auth()->user()?->tenant?->name ?? 'Restaurant' }} - Restaurant Management Overview</p>
+                <button onclick="createTestNotification()" class="btn btn-sm btn-outline-warning ms-2">🔔 Test Notification</button>
             </div>
             <div class="d-flex gap-2 align-items-center">
                 <!-- Notifications -->
@@ -888,6 +889,24 @@
         // Initial check for notifications
         if (lastNotificationCount > 0) {
             console.log('Found ' + lastNotificationCount + ' unread notifications on load');
+        }
+
+        // Create test notification function
+        function createTestNotification() {
+            fetch('/api/notifications/test', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    alert('✓ Test notification created! Refresh page to see it.');
+                } else {
+                    alert('✗ Failed: ' + (data.error || 'Unknown error'));
+                }
+            }).catch(err => {
+                alert('✗ Error: ' + err.message);
+            });
         }
 
         setInterval(() => {

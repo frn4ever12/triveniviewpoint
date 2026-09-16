@@ -106,6 +106,14 @@ class NotificationController extends Controller
     public function testCreate(Request $request)
     {
         try {
+            // Ensure notifications table exists
+            if (!\Schema::hasTable('notifications')) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Notifications table does not exist. Please run: php artisan migrate',
+                ], 500);
+            }
+
             \Log::info('Test notification creation started', [
                 'tenant_id' => auth()->user()->tenant_id,
                 'user_id' => auth()->id(),
