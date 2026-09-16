@@ -170,7 +170,7 @@ class HomeController extends Controller
             }
         }
 
-        return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tableRecord'))
+        return view('frontend.welcome.digitalmenu', compact('menuItems', 'dishesData', 'categories', 'tableRecord', 'tenant'))
             ->with('menuCategories', $categories);
     }
 }

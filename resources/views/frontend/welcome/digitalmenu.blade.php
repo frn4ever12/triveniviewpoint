@@ -932,9 +932,11 @@
             return;
         }
 
-        // Get tenant slug from current URL path
-        const pathParts = window.location.pathname.split('/');
-        const tenantSlug = pathParts[1] || 'demo-restaurant';
+        @if(isset($tenant))
+            const tenantSlug = '{{ $tenant->slug }}';
+        @else
+            const tenantSlug = 'demo-restaurant';
+        @endif
         
         @if(isset($tableRecord))
             const tableId = {{ $tableRecord->id }};
@@ -956,6 +958,8 @@
             notes: orderNotes || null
         };
 
+        console.log('Placing order with data:', orderData);
+
         try {
             const response = await fetch('/api/qr/order', {
                 method: 'POST',
@@ -966,7 +970,10 @@
                 body: JSON.stringify(orderData)
             });
 
+            console.log('Response status:', response.status);
+            
             const result = await response.json();
+            console.log('Response data:', result);
 
             if (result.success) {
                 cart = [];
@@ -979,6 +986,7 @@
                     alert('Order placed successfully!\n\nOrder #: ' + result.order.order_no + '\nTotal: Rs. ' + result.order.total_amount.toFixed(2) + '\n\nYour order is being prepared.');
                 }, 500);
             } else {
+                console.error('Order failed:', result);
                 showToast(result.message || 'Failed to place order');
             }
         } catch (error) {
