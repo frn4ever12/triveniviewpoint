@@ -307,8 +307,9 @@ class QrOrderController extends Controller
                 'table_name' => $table->name,
             ]);
 
+            // Force notification to use tenant_id 1 for demo purposes
             $notification = Notification::create([
-                'tenant_id' => $tenant->id,
+                'tenant_id' => 1, // Force to tenant_id 1 for admin dashboard
                 'type' => 'waiter_call',
                 'title' => 'Waiter Call',
                 'message' => "Table {$table->name} - Customer is requesting assistance",
@@ -316,6 +317,7 @@ class QrOrderController extends Controller
                     'waiter_call_id' => $waiterCall->id,
                     'table_id' => $table->id,
                     'table_name' => $table->name,
+                    'original_tenant_id' => $tenant->id,
                 ]),
                 'read' => false,
             ]);
