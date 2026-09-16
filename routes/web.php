@@ -37,9 +37,11 @@ Route::post('/api/qr/order', [QrOrderController::class, 'placeOrder'])->name('qr
 Route::post('/api/qr/call-waiter', [QrOrderController::class, 'callWaiter'])->name('qr.call.waiter');
 
 // Notification API Routes
-Route::post('/api/notifications/{id}/read', [App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
-Route::post('/api/notifications/mark-all-read', [App\Http\Controllers\Admin\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
-Route::get('/api/notifications/unread-count', [App\Http\Controllers\Admin\NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+Route::middleware(['auth'])->group(function () {
+    Route::post('/api/notifications/{id}/read', [App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/api/notifications/mark-all-read', [App\Http\Controllers\Admin\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::get('/api/notifications/unread-count', [App\Http\Controllers\Admin\NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+});
 
 // Checkout Route
 Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardController::class, 'index'])
