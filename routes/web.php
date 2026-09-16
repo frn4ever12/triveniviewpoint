@@ -52,6 +52,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/notifications/waiter-calls', [App\Http\Controllers\Admin\NotificationController::class, 'waiterCalls'])->name('notifications.waiterCalls');
 });
 
+// Public test endpoint (no auth required)
+Route::get('/api/test-connection', function() {
+    return response()->json(['status' => 'ok', 'message' => 'API is working']);
+});
+
 // Checkout Route
 Route::get('/checkout-dashboard', [App\Http\Controllers\Admin\CashierDashboardController::class, 'index'])
     ->middleware(['auth'])

@@ -175,17 +175,30 @@ class NotificationController extends Controller
     public function waiterCalls()
     {
         try {
+            \Log::info('Fetching waiter call notifications', [
+                'tenant_id' => 1,
+            ]);
+
             $waiterCallNotifications = Notification::where('type', 'waiter_call')
                 ->where('tenant_id', 1)
                 ->latest()
                 ->take(10)
                 ->get();
 
+            \Log::info('Waiter call notifications fetched', [
+                'count' => $waiterCallNotifications->count(),
+            ]);
+
             return response()->json([
                 'count' => $waiterCallNotifications->count(),
                 'notifications' => $waiterCallNotifications,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Failed to fetch waiter call notifications', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
