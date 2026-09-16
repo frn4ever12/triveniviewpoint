@@ -129,9 +129,8 @@ class DashboardController extends Controller
                 ->sum('total_amount');
         }        
 
-        // Get unread notifications
-        $unreadNotifications = \App\Models\Notification::where('tenant_id', $tenantId)
-            ->where('read', false)
+        // Get unread notifications - fetch all waiter calls regardless of tenant for demo
+        $unreadNotifications = \App\Models\Notification::where('read', false)
             ->latest()
             ->take(10)
             ->get();

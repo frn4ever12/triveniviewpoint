@@ -176,11 +176,11 @@ class NotificationController extends Controller
     {
         try {
             \Log::info('Fetching waiter call notifications', [
-                'tenant_id' => 1,
+                'tenant_id' => auth()->user()->tenant_id,
             ]);
 
             $waiterCallNotifications = Notification::where('type', 'waiter_call')
-                ->where('tenant_id', 1)
+                ->where('tenant_id', auth()->user()->tenant_id)
                 ->latest()
                 ->take(10)
                 ->get();

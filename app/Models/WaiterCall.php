@@ -48,16 +48,4 @@ class WaiterCall extends Model
     {
         return $query->where('table_id', $tableId);
     }
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Global scope for tenant isolation
-        static::addGlobalScope('tenant', function ($query) {
-            if (auth()->check() && auth()->user()->tenant_id) {
-                $query->where('tenant_id', auth()->user()->tenant_id);
-            }
-        });
-    }
 }

@@ -885,6 +885,11 @@
         // Poll for new notifications and play bell sound
         let lastNotificationCount = {{ isset($unreadNotifications) ? $unreadNotifications->count() : 0 }};
 
+        // Initial check for notifications
+        if (lastNotificationCount > 0) {
+            console.log('Found ' + lastNotificationCount + ' unread notifications on load');
+        }
+
         setInterval(() => {
             fetch('/api/notifications/unread-count')
                 .then(response => response.json())
