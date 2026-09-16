@@ -400,7 +400,7 @@
                 <div class="dropdown">
                     <button class="btn btn-outline-primary position-relative" type="button" data-bs-toggle="dropdown">
                         <i data-feather="bell" class="icon-xs"></i>
-                        @if($unreadNotifications->count() > 0)
+                        @if(isset($unreadNotifications) && $unreadNotifications->count() > 0)
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7rem;">
                             {{ $unreadNotifications->count() }}
                         </span>
@@ -409,11 +409,11 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow" style="width: 300px; max-height: 400px; overflow-y: auto;">
                         <li class="dropdown-header">
                             <strong>Notifications</strong>
-                            @if($unreadNotifications->count() > 0)
+                            @if(isset($unreadNotifications) && $unreadNotifications->count() > 0)
                             <a href="#" class="float-end text-decoration-none" onclick="markAllRead(event)">Mark all read</a>
                             @endif
                         </li>
-                        @if($unreadNotifications->count() > 0)
+                        @if(isset($unreadNotifications) && $unreadNotifications->count() > 0)
                             @foreach($unreadNotifications as $notification)
                             <li>
                                 <a class="dropdown-item" href="#" onclick="markRead({{ $notification->id }}, event)">
@@ -883,7 +883,7 @@
         }
 
         // Poll for new notifications and play bell sound
-        let lastNotificationCount = {{ $unreadNotifications->count() }};
+        let lastNotificationCount = {{ isset($unreadNotifications) ? $unreadNotifications->count() : 0 }};
 
         setInterval(() => {
             fetch('/api/notifications/unread-count')
