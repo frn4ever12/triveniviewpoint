@@ -307,8 +307,9 @@ class QrOrderController extends Controller
                 'table_name' => $table->name,
             ]);
 
+            // Use tenant_id 1 to match admin dashboard (same as test notification)
             $notification = Notification::create([
-                'tenant_id' => $tenant->id,
+                'tenant_id' => 1,
                 'type' => 'waiter_call',
                 'title' => 'Waiter Call',
                 'message' => "Calling from Table {$table->name}",
@@ -317,6 +318,7 @@ class QrOrderController extends Controller
                     'table_id' => $table->id,
                     'table_name' => $table->name,
                     'tenant_name' => $tenant->name,
+                    'original_tenant_id' => $tenant->id,
                 ]),
                 'read' => false,
             ]);

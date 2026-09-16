@@ -1044,6 +1044,8 @@
         };
 
         try {
+            console.log('Calling waiter with data:', callData);
+            
             const response = await fetch('/api/qr/call-waiter', {
                 method: 'POST',
                 headers: {
@@ -1053,7 +1055,9 @@
                 body: JSON.stringify(callData)
             });
 
+            console.log('Response status:', response.status);
             const result = await response.json();
+            console.log('Response data:', result);
 
             if (result.success) {
                 closeCallWaiterModal();
