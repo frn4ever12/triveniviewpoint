@@ -301,10 +301,12 @@ class QrOrderController extends Controller
                 'notification_id' => $notification->id,
                 'tenant_id' => $tenant->id,
                 'table_id' => $table->id,
+                'notification_data' => $notification->toArray(),
             ]);
         } catch (\Exception $e) {
             \Log::error('Failed to create waiter call notification', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'tenant_id' => $tenant->id,
                 'table_id' => $table->id,
             ]);

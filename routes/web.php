@@ -41,6 +41,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/notifications/{id}/read', [App\Http\Controllers\Admin\NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/api/notifications/mark-all-read', [App\Http\Controllers\Admin\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
     Route::get('/api/notifications/unread-count', [App\Http\Controllers\Admin\NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+    
+    // Test notification creation
+    Route::post('/api/notifications/test', [App\Http\Controllers\Admin\NotificationController::class, 'testCreate'])->name('notifications.test');
 });
 
 // Checkout Route

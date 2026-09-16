@@ -102,4 +102,22 @@ class NotificationController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    public function testCreate(Request $request)
+    {
+        $notification = Notification::create([
+            'tenant_id' => auth()->user()->tenant_id,
+            'type' => 'test',
+            'title' => 'Test Notification',
+            'message' => 'This is a test notification created at ' . now()->format('H:i:s'),
+            'data' => json_encode(['test' => true]),
+            'read' => false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'notification' => $notification,
+            'tenant_id' => auth()->user()->tenant_id,
+        ]);
+    }
 }
