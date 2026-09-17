@@ -1,11 +1,20 @@
 @extends('admin.includes.main')
-@section('title', 'Orders - {{ time() }}')
+@section('title', 'Orders')
 
 @push('head')
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="cache-buster" content="{{ time() }}">
+<script>
+    // Force reload if cached
+    if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
+        var nav = performance.getEntriesByType('navigation')[0];
+        if (nav.type === 'back_forward' || nav.type === 'reload') {
+            location.reload(true);
+        }
+    }
+</script>
 @endpush
 
 @section('content')
