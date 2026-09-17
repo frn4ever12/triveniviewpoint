@@ -7,13 +7,14 @@
 <meta http-equiv="Expires" content="0">
 <meta name="cache-buster" content="{{ time() }}">
 <script>
-    // Force reload if cached
-    if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
-        var nav = performance.getEntriesByType('navigation')[0];
-        if (nav.type === 'back_forward' || nav.type === 'reload') {
-            location.reload(true);
+    // Force reload with timestamp to bypass all caches
+    (function() {
+        var url = new URL(window.location.href);
+        if (!url.searchParams.has('_t')) {
+            url.searchParams.set('_t', Date.now());
+            window.location.replace(url.toString());
         }
-    }
+    })();
 </script>
 @endpush
 
