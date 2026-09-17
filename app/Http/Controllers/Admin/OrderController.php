@@ -284,8 +284,9 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Quick order created successfully',
-                'order' => $order,
-                'kot' => $kot->load('items.menuItem'),
+                'order_id' => $order->id,
+                'order_no' => $order->order_no,
+                'redirect_url' => route('orders.checkout', $order->id),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
