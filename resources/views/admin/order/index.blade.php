@@ -1187,6 +1187,8 @@
     let currentTable = { id: null, name: '' };
     let isOrderCreating = false;
     let quickCart = [];
+    let quickPaymentMethod = 'cash';
+    let quickOrderNumber = null;
     let isQuickOrderCreating = false;
     let selectedOrderType = 'dine_in';
     let selectedTableForOrder = null;
@@ -1214,9 +1216,16 @@
     }
 
     function openQuickBilling() {
+        const modal = new bootstrap.Modal(document.getElementById('quickBillingModal'));
+        modal.show();
+        // Generate order number
+        quickOrderNumber = 'QB' + Date.now().toString().slice(-4);
+        document.getElementById('quickOrderNumber').textContent = quickOrderNumber;
+        // Reset cart
         quickCart = [];
         updateQuickCartDisplay();
-        getModal('quickBillingModal')?.show();
+        // Focus search
+        setTimeout(() => document.getElementById('quickDishSearch').focus(), 500);
     }
 
     function resetAddOrderModal() {
@@ -2102,10 +2111,7 @@
     });
 
     // Quick Billing Modal Functions
-    let quickCart = [];
-    let quickPaymentMethod = 'cash';
-    let quickOrderNumber = null;
-    let isQuickOrderCreating = false;
+    // Variables already declared at top of script
 
     // Open Quick Billing modal
     function openQuickBilling() {
@@ -2482,13 +2488,7 @@
         }
     });
 
-            cart[index].size = ns;
-            cart[index].price = cart[index].basePrice * ns;
-            updateCartDisplay();
-        }
-    }
-
-    function updateCartDisplay() {
+    // Regular POS Cart Functions
         const cc = document.getElementById('cartItems');
         const cb = document.getElementById('clearCartBtn');
         const co = document.getElementById('createOrderBtn');
