@@ -2291,6 +2291,9 @@
                         </div>
                         <div class="order-actions-compact">
                             <button class="action-btn-cancel" onclick="event.stopPropagation();cancelOrder(${order.id})">Cancel</button>
+                            ${order.status !== 'completed' && order.status !== 'cancelled' ? `<button class="action-btn-add" onclick="event.stopPropagation();openAddItemsModal(${order.id}, ${table.id}, '${order.order_no}')" title="Add Items">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>` : ''}
                             <button class="action-btn-print" onclick="event.stopPropagation();printOrderSlip(${order.id}, '${table.name}')" title="Order Slip">
                                 <i class="bi bi-printer"></i>
                             </button>
