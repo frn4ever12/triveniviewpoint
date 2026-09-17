@@ -1188,16 +1188,20 @@
 @endpush
 
 @push('scripts')
-<script data-cache-bust="{{ time() }}">
-    let cart = [];
-    let currentTable = { id: null, name: '' };
-    let isOrderCreating = false;
-    let quickCart = [];
-    let quickPaymentMethod = 'cash';
-    let quickOrderNumber = null;
-    let isQuickOrderCreating = false;
-    let selectedOrderType = 'dine_in';
-    let selectedTableForOrder = null;
+<script id="orders-script-{{ md5(time()) }}">
+    // Orders Page JavaScript
+    (function() {
+        'use strict';
+
+        let cart = [];
+        let currentTable = { id: null, name: '' };
+        let isOrderCreating = false;
+        let quickCart = [];
+        let quickPaymentMethod = 'cash';
+        let quickOrderNumber = null;
+        let isQuickOrderCreating = false;
+        let selectedOrderType = 'dine_in';
+        let selectedTableForOrder = null;
 
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2876,6 +2880,7 @@
     function refreshOrders() { loadRecentOrders(); loadKOTs(); showToast('success', 'Refreshed'); }
 
     document.addEventListener('DOMContentLoaded', () => loadRecentOrders());
+    })();
 </script>
-<!-- v2.0 - Quick Billing Update -->
+<!-- Orders Script End -->
 @endpush
