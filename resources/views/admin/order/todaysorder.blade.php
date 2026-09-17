@@ -35,6 +35,11 @@
                             <td title="{{ $order->created_at }}">{{ $order->created_at->diffForHumans() }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
+                                    @if(!in_array($order->status, ['completed', 'cancelled']))
+                                    <button class="btn btn-success btn-sm" onclick="openAddItemsModal({{ $order->id }}, {{ $order->table_id ?? 'null' }}, '{{ $order->order_no }}')">
+                                        <i class="fas fa-plus"></i> Add Items
+                                    </button>
+                                    @endif
                                     <button class="btn btn-primary btn-sm" onclick="printBill({{ $order->id }})">
                                         <i class="fas fa-print"></i> Print
                                     </button>
@@ -107,6 +112,44 @@
     </div>
 </div>
 
+<!-- Add Items Modal -->
+<div class="modal fade" id="addItemsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Items to Order #<span id="modalOrderNo"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="addItemsOrderId">
+                <input type="hidden" id="addItemsTableId">
+                
+                <div class="mb-3">
+                    <label class="form-label">Select Items</label>
+                    <div id="menuItemsContainer" class="row g-2">
+                        <!-- Menu items will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Selected Items</label>
+                    <div id="selectedItemsContainer" class="border p-2" style="min-height: 100px;">
+                        <p class="text-muted mb-0">No items selected</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea id="addItemsNotes" class="form-control" rows="2" placeholder="Any special instructions..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddItems()">Add Items</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
@@ -289,5 +332,157 @@
         printWindow.onload = function () {
             printWindow.print();
         };
+    }
+
+    // Add Items to Order
+    let selectedItems = [];
+    
+    function openAddItemsModal(orderId, tableId, orderNo) {
+        document.getElementById('addItemsOrderId').value = orderId;
+        document.getElementById('addItemsTableId').value = tableId || '';
+        document.getElementById('modalOrderNo').textContent = orderNo;
+        document.getElementById('addItemsNotes').value = '';
+        selectedItems = [];
+        updateSelectedItemsDisplay();
+        
+        // Load menu items
+        loadMenuItems();
+        
+        const modal = new bootstrap.Modal(document.getElementById('addItemsModal'));
+        modal.show();
+    }
+    
+    async function loadMenuItems() {
+        try {
+            const response = await fetch('/admin/menu-items');
+            const data = await response.json();
+            
+            const container = document.getElementById('menuItemsContainer');
+            container.innerHTML = '';
+            
+            if (data.success && data.items) {
+                data.items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'col-md-4 col-sm-6';
+                    itemDiv.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-body p-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="item-${item.id}" value="${item.id}" onchange="toggleItemSelection(${item.id}, '${item.name}', ${item.price})">
+                                    <label class="form-check-label" for="item-${item.id}" style="cursor: pointer;">
+                                        <div style="font-weight: 600;">${item.name}</div>
+                                        <div style="font-size: 0.85rem; color: #666;">Rs. ${item.price}</div>
+                                    </label>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="number" class="form-control form-control-sm" id="qty-${item.id}" value="1" min="1" max="99" style="width: 70px;" onchange="updateItemQuantity(${item.id})">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(itemDiv);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load menu items:', error);
+            alert('Failed to load menu items');
+        }
+    }
+    
+    function toggleItemSelection(itemId, name, price) {
+        const checkbox = document.getElementById(`item-${itemId}`);
+        const qtyInput = document.getElementById(`qty-${itemId}`);
+        const quantity = parseInt(qtyInput.value) || 1;
+        
+        if (checkbox.checked) {
+            selectedItems.push({
+                menu_item_id: itemId,
+                name: name,
+                unit_price: price,
+                quantity: quantity
+            });
+        } else {
+            selectedItems = selectedItems.filter(item => item.menu_item_id !== itemId);
+        }
+        
+        updateSelectedItemsDisplay();
+    }
+    
+    function updateItemQuantity(itemId) {
+        const qtyInput = document.getElementById(`qty-${itemId}`);
+        const quantity = parseInt(qtyInput.value) || 1;
+        
+        const item = selectedItems.find(i => i.menu_item_id === itemId);
+        if (item) {
+            item.quantity = quantity;
+        }
+        
+        updateSelectedItemsDisplay();
+    }
+    
+    function updateSelectedItemsDisplay() {
+        const container = document.getElementById('selectedItemsContainer');
+        
+        if (selectedItems.length === 0) {
+            container.innerHTML = '<p class="text-muted mb-0">No items selected</p>';
+            return;
+        }
+        
+        let html = '<div class="row">';
+        selectedItems.forEach(item => {
+            html += `
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>Rs. ${(item.unit_price * item.quantity).toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        const total = selectedItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        html += `<div class="mt-2 pt-2 border-top"><strong>Total: Rs. ${total.toFixed(2)}</strong></div>`;
+        
+        container.innerHTML = html;
+    }
+    
+    async function submitAddItems() {
+        if (selectedItems.length === 0) {
+            alert('Please select at least one item');
+            return;
+        }
+        
+        const orderId = document.getElementById('addItemsOrderId').value;
+        const tableId = document.getElementById('addItemsTableId').value;
+        const notes = document.getElementById('addItemsNotes').value;
+        
+        try {
+            const response = await fetch(`/admin/tables/${tableId}/add-items`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    items: selectedItems,
+                    notes: notes
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Items added successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('addItemsModal')).hide();
+                location.reload();
+            } else {
+                alert('Failed to add items: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error adding items:', error);
+            alert('Failed to add items');
+        }
     }
 </script>
