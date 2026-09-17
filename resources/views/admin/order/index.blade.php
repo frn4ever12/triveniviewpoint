@@ -2476,6 +2476,7 @@
     });
 
     // Regular POS Cart Functions
+    function updateCartDisplay() {
         const cc = document.getElementById('cartItems');
         const cb = document.getElementById('clearCartBtn');
         const co = document.getElementById('createOrderBtn');
@@ -2870,4 +2871,5 @@
 
     document.addEventListener('DOMContentLoaded', () => loadRecentOrders());
 </script>
+<!-- v2.0 - Quick Billing Update -->
 @endpush
