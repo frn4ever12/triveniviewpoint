@@ -180,13 +180,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/orders/table/{table}/checkout', [OrderController::class, 'checkoutTable'])
             ->name('orders.table.process-checkout')
             ->middleware('can:checkout-process');
+    });
 
+    Route::middleware('can:checkout-view')->group(function () {
         Route::get('/orders/{id}/checkout', [OrderController::class, 'showQuickCheckout'])
-            ->name('orders.checkout')
-            ->middleware('can:checkout-view');
+            ->name('orders.checkout');
         Route::post('/orders/{id}/checkout', [OrderController::class, 'quickCheckout'])
             ->name('orders.process-checkout')
             ->middleware('can:checkout-process');
+    });
+
+    Route::middleware('can:orders.view')->group(function () {
         Route::put('/order-items/{orderItem}/status', [OrderController::class, 'updateOrderItemStatus'])
             ->name('order-items.status');
 
