@@ -149,29 +149,46 @@
 
         /* Hero Section */
         .dm-hero {
-            background: linear-gradient(135deg, var(--gray-900) 0%, #1a1a2e 100%);
             padding: 2rem 1rem;
             text-align: center;
             position: relative;
             overflow: hidden;
+            min-height: 250px;
+        }
+        .dm-hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .dm-hero-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .dm-hero-img:first-child {
+            opacity: 1;
         }
         .dm-hero::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 60%);
-            animation: dmPulse 8s ease-in-out infinite;
-        }
-        @keyframes dmPulse {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(5%, 5%); }
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.5) 100%);
+            z-index: 2;
         }
         .dm-hero-content {
             position: relative;
-            z-index: 2;
+            z-index: 3;
         }
         .dm-hero h1 {
             font-family: var(--font-serif);
@@ -515,6 +532,11 @@
 
     <!-- Hero -->
     <section class="dm-hero">
+        <div class="dm-hero-bg">
+            <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&h=400&fit=crop" alt="Food Banner 1" class="dm-hero-img">
+            <img src="https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200&h=400&fit=crop" alt="Food Banner 2" class="dm-hero-img">
+            <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=1200&h=400&fit=crop" alt="Food Banner 3" class="dm-hero-img">
+        </div>
         <div class="container dm-hero-content">
             <h1>{{ $siteName ?? 'RestaurantPro' }}</h1>
             <p>Delicious food, freshly made with love</p>
@@ -1093,6 +1115,22 @@
             console.error('Test notification error:', err);
             alert('✗ Error: ' + err.message);
         });
+    }
+
+    // Hero image carousel
+    let currentHeroImage = 0;
+    const heroImages = document.querySelectorAll('.dm-hero-img');
+    
+    function rotateHeroImages() {
+        if (heroImages.length > 0) {
+            heroImages[currentHeroImage].style.opacity = '0';
+            currentHeroImage = (currentHeroImage + 1) % heroImages.length;
+            heroImages[currentHeroImage].style.opacity = '1';
+        }
+    }
+    
+    if (heroImages.length > 1) {
+        setInterval(rotateHeroImages, 4000); // Change every 4 seconds
     }
 
     // Notifications
