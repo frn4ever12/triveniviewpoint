@@ -691,16 +691,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #3b82f6;
+            background: #10b981;
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.15s;
+            font-size: 14px;
         }
         .action-btn-add:hover {
-            background: #2563eb;
+            background: #059669;
         }
 
         .action-btn-print {
@@ -2291,7 +2291,7 @@
                         </div>
                         <div class="order-actions-compact">
                             <button class="action-btn-cancel" onclick="event.stopPropagation();cancelOrder(${order.id})">Cancel</button>
-                            ${order.status !== 'completed' && order.status !== 'cancelled' ? `<button class="action-btn-add" onclick="event.stopPropagation();openAddItemsModal(${order.id}, ${table.id}, '${order.order_no}')" title="Add Items">
+                            ${order.status !== 'completed' && order.status !== 'cancelled' ? `<button class="action-btn-add" onclick="event.stopPropagation();openAddItemsModal(${table.id}, '${table.name}', ${order.id})" title="Add Items">
                                 <i class="bi bi-plus-lg"></i>
                             </button>` : ''}
                             <button class="action-btn-print" onclick="event.stopPropagation();printOrderSlip(${order.id}, '${table.name}')" title="Order Slip">
