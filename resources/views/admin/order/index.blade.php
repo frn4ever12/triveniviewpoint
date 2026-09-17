@@ -2482,10 +2482,6 @@
         }
     });
 
-    function updateItemSize(index, change) {
-        if (!cart[index]) return;
-        const ns = Math.round((cart[index].size + change) * 10) / 10;
-        if (ns >= .5 && ns <= 1) {
             cart[index].size = ns;
             cart[index].price = cart[index].basePrice * ns;
             updateCartDisplay();
