@@ -1182,7 +1182,7 @@
 @endpush
 
 @push('scripts')
-<script>
+<script nonce="{{ md5(time()) }}">
     let cart = [];
     let currentTable = { id: null, name: '' };
     let isOrderCreating = false;
