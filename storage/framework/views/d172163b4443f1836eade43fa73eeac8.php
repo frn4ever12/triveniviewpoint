@@ -107,56 +107,67 @@
         <div class="modal fade" id="quickBillingModal" tabindex="-1">
             <div class="modal-dialog modal-xl modal-dialog-centered">
                 <div class="modal-content" style="border-radius:14px;border:none;">
-                    <div class="modal-header border-bottom py-3 px-4">
-                        <div class="d-flex align-items-center gap-3">
-                            <h5 class="modal-title mb-0 fw-bold"><i class="bi bi-lightning text-warning me-2"></i>Quick Billing</h5>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <select class="form-select form-select-sm" id="quickWaiterSelect" style="width:auto;border-radius:8px;">
-                                <option value="">Assign Waiter</option>
-                                <?php $__currentLoopData = $waiters; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $waiter): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($waiter->id); ?>"><?php echo e($waiter->name); ?></option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </select>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-header border-bottom py-3 px-4" style="background: linear-gradient(135deg, #1A73E8 0%, #0066FF 100%);">
+                        <div class="d-flex align-items-center justify-content-between w-100">
+                            <div>
+                                <h5 class="modal-title mb-1 fw-bold text-white"><i class="bi bi-lightning-fill text-warning me-2"></i>Quick Billing</h5>
+                                <p class="mb-0 text-white-50 small">Walk-in / Takeaway • Fast & Easy</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="text-white small mb-0">Order Type:</label>
+                                    <select class="form-select form-select-sm" id="quickOrderType" style="width:120px;border-radius:6px;">
+                                        <option value="walk_in">Walk-in</option>
+                                        <option value="takeaway">Takeaway</option>
+                                    </select>
+                                </div>
+                                <div class="bg-white bg-opacity-20 rounded px-3 py-1">
+                                    <span class="text-white small">Order #:</span>
+                                    <span class="text-white fw-bold" id="quickOrderNumber">--</span>
+                                </div>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-body p-4 row g-4">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0" style="border-radius:10px 0 0 10px;"><i class="bi bi-search"></i></span>
-                                    <input type="text" class="form-control border-start-0" placeholder="Search dishes..." id="quickDishSearch" style="border-radius:0 10px 10px 0;">
+                    <div class="modal-body p-0">
+                        <div class="row g-0">
+                            <!-- LEFT SIDE - Product Selection -->
+                            <div class="col-lg-7 col-md-8 border-end" style="background:#F8FAFC;">
+                                <!-- Search -->
+                                <div class="p-3 border-bottom bg-white">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0" style="border-radius:8px 0 0 8px;">
+                                            <i class="bi bi-search text-muted"></i>
+                                        </span>
+                                        <input type="text" class="form-control border-start-0" placeholder="Search item... (e.g. momo, chicken, coke)" id="quickDishSearch" style="border-radius:0 8px 8px 0;">
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <div class="list-group menu-categories" id="quickMenuCategories" style="border-radius:10px;">
-                                        <button class="list-group-item list-group-item-action active" data-menu-id="all">All Items</button>
-                                        <?php $__currentLoopData = $menus; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $menu): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <button class="list-group-item list-group-item-action" data-menu-id="<?php echo e($menu->id); ?>">
-                                                <?php echo e($menu->name); ?>
 
-                                                <span class="badge bg-light text-dark ms-auto"><?php echo e($menu->dishes->count()); ?></span>
-                                            </button>
+                                <!-- Category Buttons -->
+                                <div class="p-3 border-bottom bg-white">
+                                    <div class="d-flex flex-wrap gap-2" id="quickMenuCategories">
+                                        <button class="btn btn-sm btn-primary rounded-pill px-3 active" data-menu-id="all">All</button>
+                                        <?php $__currentLoopData = $menus; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $menu): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-menu-id="<?php echo e($menu->id); ?>"><?php echo e($menu->name); ?></button>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </div>
                                 </div>
-                                <div class="col-md-9">
-                                    <h6 id="quickMenuTitle" class="fw-bold mb-2" style="font-size:.85rem;">All Items</h6>
-                                    <div class="row g-2" id="quickDishesContainer" style="max-height:420px;overflow-y:auto;">
+
+                                <!-- Popular Items -->
+                                <div class="p-3">
+                                    <h6 class="fw-bold mb-3" style="font-size:.9rem;color:#1E293B;">
+                                        <i class="bi bi-fire text-danger me-1"></i>Popular Items
+                                    </h6>
+                                    <div class="row g-2" id="quickDishesContainer" style="max-height:400px;overflow-y:auto;">
                                         <?php $__currentLoopData = $dishes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dish): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <div class="col-6 col-lg-4 dish-card-wrap" data-menu-id="<?php echo e($dish->menu_id); ?>">
-                                                <div class="dish-card-new">
-                                                    <img src="<?php echo e($dish->image_url ?: asset('assets/images/defaultfood.png')); ?>"
-                                                         class="dish-img-new" alt="<?php echo e($dish->name); ?>">
-                                                    <div class="dish-info-new">
-                                                        <h6 class="mb-1" style="font-size:.82rem;"><?php echo e($dish->name); ?></h6>
-                                                        <p class="text-danger fw-bold mb-1" style="font-size:.85rem;">Rs <?php echo e(number_format($dish->final_price ?? $dish->price, 2)); ?></p>
-                                                        <p class="text-muted small mb-2" style="font-size:.72rem;"><?php echo e(Str::limit($dish->description, 40)); ?></p>
-                                                        <button class="btn btn-outline-danger btn-sm w-100 rounded-3"
-                                                                onclick="addToQuickCart(<?php echo e($dish->id); ?>, '<?php echo e($dish->name); ?>', <?php echo e($dish->final_price ?? $dish->price); ?>, '<?php echo e($dish->image_url ?: asset('assets/images/defaultfood.png')); ?>')">
-                                                            <i class="bi bi-cart-plus me-1"></i> Add
+                                            <div class="col-6 col-md-4 col-lg-3 dish-card-wrap" data-menu-id="<?php echo e($dish->category_id); ?>">
+                                                <div class="card h-100 border-0 shadow-sm" style="border-radius:10px;cursor:pointer;transition:transform 0.2s;" onclick="addToQuickCart(<?php echo e($dish->id); ?>, '<?php echo e($dish->name); ?>', <?php echo e($dish->final_price ?? $dish->price); ?>, '<?php echo e($dish->image_url ?: asset('assets/images/defaultfood.png')); ?>')">
+                                                    <img src="<?php echo e($dish->image_url ?: asset('assets/images/defaultfood.png')); ?>" class="card-img-top" alt="<?php echo e($dish->name); ?>" style="height:100px;object-fit:cover;border-radius:10px 10px 0 0;">
+                                                    <div class="card-body p-2 text-center">
+                                                        <h6 class="card-title mb-1" style="font-size:.8rem;font-weight:600;color:#1E293B;"><?php echo e(Str::limit($dish->name, 20)); ?></h6>
+                                                        <p class="card-text text-danger fw-bold mb-0" style="font-size:.85rem;">NPR <?php echo e(number_format($dish->final_price ?? $dish->price, 0)); ?></p>
+                                                        <button class="btn btn-sm btn-primary w-100 mt-2 rounded-3" style="font-size:.75rem;">
+                                                            <i class="bi bi-plus-lg me-1"></i>Add
                                                         </button>
                                                     </div>
                                                 </div>
@@ -165,31 +176,103 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border rounded-3 p-3 bg-light">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 fw-bold" style="font-size:.85rem;"><i class="bi bi-cart me-1"></i> Cart</h6>
-                                    <button class="btn btn-link btn-sm text-danger p-0" id="clearQuickCartBtn" style="display:none;text-decoration:none;">Clear</button>
+
+                            <!-- RIGHT SIDE - Current Order -->
+                            <div class="col-lg-5 col-md-4" style="background:white;">
+                                <div class="p-3 border-bottom">
+                                    <h6 class="fw-bold mb-0" style="font-size:.95rem;color:#1E293B;">
+                                        <i class="bi bi-cart3 me-2 text-primary"></i>Current Order
+                                    </h6>
                                 </div>
-                                <div id="quickCartItems" class="mb-3" style="max-height:280px;overflow-y:auto;">
-                                    <p class="text-muted text-center small">No items selected.</p>
-                                </div>
-                                <hr class="my-2">
-                                <div class="mb-3">
-                                    <input type="text" class="form-control form-control-sm mb-2 rounded-3" placeholder="Customer Name" id="quickCustomerName">
-                                    <input type="number" class="form-control form-control-sm mb-2 rounded-3" placeholder="No. of guests" id="quickGuestCount" min="1">
-                                    <textarea class="form-control form-control-sm rounded-3" placeholder="Notes..." id="quickOrderNotes" rows="2"></textarea>
-                                </div>
-                                <div class="bg-white rounded-3 p-3 border">
-                                    <div class="d-flex justify-content-between mb-2 small">
-                                        <span class="fw-medium">QTY: <span id="quickTotalQty">0</span></span>
-                                        <span class="fw-bold">Rs <span id="quickTotalAmount">0.00</span></span>
+
+                                <div id="quickCartItems" class="p-3" style="max-height:300px;overflow-y:auto;">
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="bi bi-cart-x" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i>
+                                        <small>No items added</small>
                                     </div>
-                                    <button class="btn btn-success w-100 rounded-3" id="quickCreateOrderBtn" disabled>
-                                        <span class="btn-text"><i class="bi bi-lightning"></i> Quick Checkout</span>
-                                        <span class="spinner-border spinner-border-sm d-none"></span>
-                                    </button>
+                                </div>
+
+                                <!-- Special Instructions -->
+                                <div class="px-3 pb-3">
+                                    <label class="form-label small fw-semibold text-muted">Special instructions (optional)</label>
+                                    <textarea class="form-control form-control-sm rounded-3" placeholder="e.g. Less spicy, no onion, extra sauce..." id="quickOrderNotes" rows="2"></textarea>
+                                </div>
+
+                                <!-- Bill Summary -->
+                                <div class="px-3 pb-3 border-top">
+                                    <div class="bg-light rounded-3 p-3">
+                                        <div class="d-flex justify-content-between mb-2 small">
+                                            <span class="text-muted">Subtotal</span>
+                                            <span class="fw-semibold">NPR <span id="quickSubtotal">0</span></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 small">
+                                            <span class="text-muted">Discount</span>
+                                            <span class="fw-semibold text-danger">-NPR <span id="quickDiscount">0</span></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 small">
+                                            <span class="text-muted">VAT (13%)</span>
+                                            <span class="fw-semibold">+NPR <span id="quickVat">0</span></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 small">
+                                            <span class="text-muted">Service Charge (5%)</span>
+                                            <span class="fw-semibold">+NPR <span id="quickServiceCharge">0</span></span>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-bold" style="color:#1E293B;">Grand Total</span>
+                                            <span class="fw-bold fs-5" style="color:#1A73E8;">NPR <span id="quickGrandTotal">0</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Payment Method -->
+                                <div class="px-3 pb-3 border-top">
+                                    <label class="form-label small fw-semibold text-muted mb-2">Payment Method</label>
+                                    <div class="d-flex gap-2 flex-wrap" id="quickPaymentMethods">
+                                        <button class="btn btn-sm btn-outline-primary active rounded-3 px-3" data-method="cash" onclick="selectQuickPayment(this, 'cash')">
+                                            <i class="bi bi-cash-stack me-1"></i>Cash
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary rounded-3 px-3" data-method="esewa" onclick="selectQuickPayment(this, 'esewa')">
+                                            eSewa
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary rounded-3 px-3" data-method="khalti" onclick="selectQuickPayment(this, 'khalti')">
+                                            Khalti
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary rounded-3 px-3" data-method="card" onclick="selectQuickPayment(this, 'card')">
+                                            <i class="bi bi-credit-card me-1"></i>Card
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary rounded-3 px-3" data-method="other" onclick="selectQuickPayment(this, 'other')">
+                                            Other
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Cash Payment -->
+                                <div id="quickCashPayment" class="px-3 pb-3 border-top">
+                                    <label class="form-label small fw-semibold text-muted mb-2">Amount Received</label>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text">NPR</span>
+                                        <input type="number" class="form-control" id="quickAmountReceived" placeholder="0" oninput="calculateQuickChange()">
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="text-muted">Change:</span>
+                                        <span class="fw-bold text-success">NPR <span id="quickChange">0</span></span>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="p-3 border-top bg-light">
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-secondary flex-fill rounded-3" id="quickPrintBtn" disabled>
+                                            <i class="bi bi-printer me-1"></i>Print Bill (F4)
+                                        </button>
+                                        <button class="btn btn-primary flex-fill rounded-3" id="quickCompleteOrderBtn" disabled>
+                                            <i class="bi bi-check-circle me-1"></i>Complete Order (Ctrl+Enter)
+                                        </button>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">F2 Search | Enter Add Item | +/- Qty | F4 Cash | Esc Close</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2019,31 +2102,273 @@
     });
 
     // Quick Billing Modal Functions
+    let quickCart = [];
+    let quickPaymentMethod = 'cash';
+    let quickOrderNumber = null;
+    let isQuickOrderCreating = false;
+
+    // Open Quick Billing modal
+    function openQuickBilling() {
+        const modal = new bootstrap.Modal(document.getElementById('quickBillingModal'));
+        modal.show();
+        // Generate order number
+        quickOrderNumber = 'QB' + Date.now().toString().slice(-4);
+        document.getElementById('quickOrderNumber').textContent = quickOrderNumber;
+        // Reset cart
+        quickCart = [];
+        updateQuickCartDisplay();
+        // Focus search
+        setTimeout(() => document.getElementById('quickDishSearch').focus(), 500);
+    }
+
+    // Category filter
     document.querySelectorAll('#quickMenuCategories button').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
-            document.querySelectorAll('#quickMenuCategories button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            document.querySelectorAll('#quickMenuCategories button').forEach(b => {
+                b.classList.remove('btn-primary', 'active');
+                b.classList.add('btn-outline-secondary');
+            });
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-primary', 'active');
             const menuId = btn.dataset.menuId;
             document.querySelectorAll('#quickDishesContainer .dish-card-wrap').forEach(d => {
                 d.style.display = (menuId === 'all' || d.dataset.menuId === menuId) ? '' : 'none';
             });
-            document.getElementById('quickMenuTitle').textContent = btn.textContent.split('\n')[0].trim();
         });
     });
 
+    // Search
     document.getElementById('quickDishSearch').addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase();
         document.querySelectorAll('#quickDishesContainer .dish-card-wrap').forEach(d => {
             const name = d.querySelector('h6').textContent.toLowerCase();
-            const desc = d.querySelector('.text-muted').textContent.toLowerCase();
-            d.style.display = (name.includes(q) || desc.includes(q)) ? '' : 'none';
+            d.style.display = name.includes(q) ? '' : 'none';
         });
     });
 
+    // Add to cart
     function addToQuickCart(id, name, price, image) {
         const defaultImage = '/assets/images/defaultfood.png';
         const validImage = (image && image !== 'null' && image !== '') ? image : defaultImage;
+        const existing = quickCart.find(i => i.id === id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            quickCart.push({ id, name, price, image: validImage, quantity: 1, size: 1, basePrice: price });
+        }
+        updateQuickCartDisplay();
+    }
+
+    // Update cart display
+    function updateQuickCartDisplay() {
+        const cc = document.getElementById('quickCartItems');
+        const cp = document.getElementById('quickCompleteOrderBtn');
+        const pp = document.getElementById('quickPrintBtn');
+        
+        if (!quickCart.length) {
+            cc.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-cart-x" style="font-size:2rem;display:block;margin-bottom:.5rem;"></i><small>No items added</small></div>';
+            if (cp) cp.disabled = true;
+            if (pp) pp.disabled = true;
+            updateQuickBillSummary(0);
+            return;
+        }
+        
+        if (cp) cp.disabled = isQuickOrderCreating;
+        if (pp) pp.disabled = isQuickOrderCreating;
+        
+        let html = '';
+        quickCart.forEach((item, i) => {
+            const total = item.price * item.quantity;
+            html += `<div class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded">
+                <img src="${item.image}" alt="${item.name}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;">
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small" style="font-size:.8rem;">${item.name}</div>
+                    <div class="text-muted small">${item.quantity} × NPR ${item.price.toFixed(0)}</div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold small text-primary">NPR ${total.toFixed(0)}</div>
+                    <div class="d-flex align-items-center gap-1 mt-1">
+                        <button class="btn btn-sm btn-outline-secondary rounded" style="padding:2px 6px;font-size:.7rem;" onclick="updateQuickQuantity(${i},-1)">−</button>
+                        <span class="small fw-semibold">${item.quantity}</span>
+                        <button class="btn btn-sm btn-outline-secondary rounded" style="padding:2px 6px;font-size:.7rem;" onclick="updateQuickQuantity(${i},1)">+</button>
+                    </div>
+                </div>
+                <button class="btn btn-sm text-danger" onclick="removeQuickItem(${i})"><i class="bi bi-trash"></i></button>
+            </div>`;
+        });
+        cc.innerHTML = html;
+        
+        // Calculate subtotal
+        const subtotal = quickCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        updateQuickBillSummary(subtotal);
+    }
+
+    // Update bill summary
+    function updateQuickBillSummary(subtotal) {
+        const vatPercent = 13;
+        const serviceChargePercent = 5;
+        
+        const vatAmount = Math.round(subtotal * (vatPercent / 100));
+        const serviceCharge = Math.round(subtotal * (serviceChargePercent / 100));
+        const grandTotal = subtotal + vatAmount + serviceCharge;
+        
+        document.getElementById('quickSubtotal').textContent = subtotal.toFixed(0);
+        document.getElementById('quickDiscount').textContent = '0';
+        document.getElementById('quickVat').textContent = vatAmount.toFixed(0);
+        document.getElementById('quickServiceCharge').textContent = serviceCharge.toFixed(0);
+        document.getElementById('quickGrandTotal').textContent = grandTotal.toFixed(0);
+        
+        // Update amount received placeholder
+        document.getElementById('quickAmountReceived').placeholder = grandTotal.toFixed(0);
+    }
+
+    // Update quantity
+    function updateQuickQuantity(index, change) {
+        if (!quickCart[index]) return;
+        quickCart[index].quantity += change;
+        if (quickCart[index].quantity <= 0) quickCart.splice(index, 1);
+        updateQuickCartDisplay();
+    }
+
+    // Remove item
+    function removeQuickItem(index) { 
+        quickCart.splice(index, 1); 
+        updateQuickCartDisplay(); 
+    }
+
+    // Select payment method
+    function selectQuickPayment(btn, method) {
+        quickPaymentMethod = method;
+        document.querySelectorAll('#quickPaymentMethods button').forEach(b => {
+            b.classList.remove('btn-primary', 'active');
+            b.classList.add('btn-outline-secondary');
+        });
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-primary', 'active');
+        
+        // Show/hide cash payment section
+        const cashSection = document.getElementById('quickCashPayment');
+        if (method === 'cash') {
+            cashSection.style.display = 'block';
+        } else {
+            cashSection.style.display = 'none';
+        }
+    }
+
+    // Calculate change
+    function calculateQuickChange() {
+        const received = parseFloat(document.getElementById('quickAmountReceived').value) || 0;
+        const grandTotal = parseFloat(document.getElementById('quickGrandTotal').textContent) || 0;
+        const change = Math.max(0, received - grandTotal);
+        document.getElementById('quickChange').textContent = change.toFixed(0);
+    }
+
+    // Complete order
+    document.getElementById('quickCompleteOrderBtn').addEventListener('click', async () => {
+        if (!quickCart.length || isQuickOrderCreating) return;
+        
+        // Validate payment
+        if (quickPaymentMethod === 'cash') {
+            const received = parseFloat(document.getElementById('quickAmountReceived').value) || 0;
+            const grandTotal = parseFloat(document.getElementById('quickGrandTotal').textContent) || 0;
+            if (received < grandTotal) {
+                alert('Insufficient amount received!');
+                return;
+            }
+        }
+        
+        isQuickOrderCreating = true;
+        const btn = document.getElementById('quickCompleteOrderBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        
+        try {
+            const subtotal = quickCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const vatPercent = 13;
+            const serviceChargePercent = 5;
+            const vatAmount = Math.round(subtotal * (vatPercent / 100));
+            const serviceCharge = Math.round(subtotal * (serviceChargePercent / 100));
+            const grandTotal = subtotal + vatAmount + serviceCharge;
+            
+            const r = await fetch('/admin/orders/quick-billing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                body: JSON.stringify({
+                    order_type: document.getElementById('quickOrderType').value,
+                    customer_name: document.getElementById('quickCustomerName')?.value || null,
+                    notes: document.getElementById('quickOrderNotes').value,
+                    payment_method: quickPaymentMethod,
+                    amount_received: quickPaymentMethod === 'cash' ? document.getElementById('quickAmountReceived').value : null,
+                    vat_percent: vatPercent,
+                    service_charge: serviceCharge,
+                    items: quickCart.map(item => ({ menu_item_id: item.id, quantity: item.quantity, unit_price: item.price, size: item.size }))
+                })
+            });
+            const d = await r.json();
+            if (d.success) {
+                showToast('success', 'Order completed successfully!');
+                quickCart = []; 
+                updateQuickCartDisplay();
+                bootstrap.Modal.getInstance(document.getElementById('quickBillingModal')).hide();
+                loadRecentOrders();
+                loadKOTs();
+                setTimeout(() => location.reload(), 500);
+            } else { 
+                showToast('error', d.message); 
+            }
+        } catch (e) { 
+            showToast('error', 'Failed to complete order'); 
+        }
+        finally {
+            isQuickOrderCreating = false;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Complete Order (Ctrl+Enter)';
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('quickBillingModal');
+        if (!modal || !modal.classList.contains('show')) return;
+        
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            // Allow default behavior in input fields
+            if (e.key === 'Escape') {
+                bootstrap.Modal.getInstance(modal).hide();
+            }
+            return;
+        }
+        
+        switch(e.key) {
+            case 'F2':
+                e.preventDefault();
+                document.getElementById('quickDishSearch').focus();
+                break;
+            case 'F4':
+                e.preventDefault();
+                selectQuickPayment(document.querySelector('[data-method="cash"]'), 'cash');
+                document.getElementById('quickAmountReceived').focus();
+                break;
+            case 'Escape':
+                e.preventDefault();
+                bootstrap.Modal.getInstance(modal).hide();
+                break;
+        }
+    });
+
+    document.getElementById('quickDishSearch').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            // Add first visible item
+            const firstVisible = document.querySelector('#quickDishesContainer .dish-card-wrap:not([style*="display: none"])');
+            if (firstVisible) {
+                firstVisible.click();
+            }
+        }
+    });
+
+    // Old Quick Billing Modal Functions (kept for backward compatibility)
         const existing = quickCart.find(i => i.id === id);
         if (existing) {
             existing.quantity++;
@@ -2145,9 +2470,8 @@
                 showToast('success', 'Quick order created');
                 quickCart = []; updateQuickCartDisplay();
                 bootstrap.Modal.getInstance(document.getElementById('quickBillingModal')).hide();
-                loadRecentOrders();
-                loadKOTs(); // Auto-refresh KOT section
-                setTimeout(() => location.reload(), 800);
+                // Redirect to checkout page with order
+                window.location.href = d.redirect_url;
             } else { showToast('error', d.message); }
         } catch (e) { showToast('error', 'Failed to create quick order'); }
         finally {
