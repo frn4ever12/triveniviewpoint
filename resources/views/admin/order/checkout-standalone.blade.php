@@ -113,30 +113,31 @@
 
         .checkout-body {
             display: flex;
-            gap: 10px;
+            gap: 16px;
             align-items: flex-start;
             flex: 1;
             min-height: 0;
         }
 
         .checkout-main {
-            flex: 0 0 70%;
+            flex: 1;
             min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
         }
 
         .checkout-invoice-panel {
-            flex: 0 0 30%;
-            background: #fef3c7;
-            border-radius: 4px;
-            padding: 12px;
-            border: 1px solid #fcd34d;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            width: 380px;
+            flex-shrink: 0;
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid #E0E0E0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             position: sticky;
             top: 10px;
-            max-height: 100%;
+            max-height: calc(100vh - 20px);
             overflow-y: auto;
         }
 
@@ -188,19 +189,20 @@
         }
 
         .items-table th {
-            background: #f9fafb;
-            padding: 6px 8px;
+            background: #F4F6F8;
+            padding: 10px 12px;
             text-align: left;
             font-weight: 600;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 11px;
+            color: #1E293B;
+            border-bottom: 1px solid #E0E0E0;
+            font-size: 12px;
         }
 
         .items-table td {
-            padding: 8px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 11px;
+            padding: 12px;
+            border-bottom: 1px solid #E0E0E0;
+            font-size: 13px;
+            color: #1E293B;
         }
 
         .items-table tr:last-child td {
@@ -325,29 +327,30 @@
         .payment-methods {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 4px;
+            gap: 8px;
         }
 
         .payment-method {
-            padding: 6px 4px;
-            border: 1px solid #e5e7eb;
+            padding: 8px 4px;
+            border: 1px solid #E0E0E0;
             background: white;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             text-align: center;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 500;
             transition: all 0.2s;
         }
 
         .payment-method:hover {
-            border-color: #3b82f6;
+            border-color: #1A73E8;
         }
 
         .payment-method.active {
-            border-color: #3b82f6;
-            background: #eff6ff;
-            color: #3b82f6;
+            border-color: #1A73E8;
+            background: #E0F2FE;
+            color: #1A73E8;
+            font-weight: 600;
         }
 
         .net-sales {
@@ -651,26 +654,33 @@
         <div class="checkout-body">
             <!-- Main Content -->
             <div class="checkout-main">
-                <!-- Action Bar -->
-                <div class="action-bar no-print">
-                    <button class="action-btn">Split Bill</button>
-                    <button class="action-btn">Complimentary</button>
-                    <button class="action-btn">Add Extra Charges</button>
+                <!-- Order Header -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div>
+                            <h2 style="font-size: 18px; font-weight: 700; color: #1E293B; margin: 0;">Checkout</h2>
+                            <p style="font-size: 13px; color: #64748B; margin: 4px 0 0 0;">Complete the order and collect payment</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="background: #E0F2FE; color: #0369A1; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">Order #1045</span>
+                            <span style="background: #DCFCE7; color: #166534; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">Table {{ $table->name ?? '5' }}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Items Table -->
                 <div class="card">
-                    <div class="card-title">All Items</div>
+                    <div class="card-title">Order Items</div>
                     <table class="items-table">
                         <thead>
                             <tr>
-                                <th>S.N</th>
+                                <th width="40">#</th>
                                 <th>Item</th>
-                                <th>Size</th>
-                                <th>QTY</th>
-                                <th>Rate</th>
-                                <th>Discount</th>
-                                <th>Item Total</th>
+                                <th width="80">Rate</th>
+                                <th width="80">Qty</th>
+                                <th width="80">Discount (%)</th>
+                                <th width="80">Charge (₹)</th>
+                                <th width="50">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -689,6 +699,7 @@
                                                     'size' => $item->size ?? 1,
                                                     'base_price' => ($item->unit_price ?? 0) / ($item->size ?? 1),
                                                     'menu_item_id' => $item->menu_item_id,
+                                                    'image' => $menuItem->getFirstMediaUrl('image') ?? asset('assets/images/defaultfood.png'),
                                                 ];
                                             }
                                             $grouped[$key]['quantity'] += $item->quantity ?? 0;
@@ -700,154 +711,168 @@
                             @forelse($grouped as $key => $item)
                                 <tr data-item-key="{{ $key }}" data-base-price="{{ $item['base_price'] }}">
                                     <td>{{ $sn++ }}</td>
-                                    <td>{{ $item['name'] }}</td>
                                     <td>
-                                        <div class="size-selector-inline">
-                                            <button class="size-btn-inline {{ $item['size'] == 0.5 ? 'active' : '' }}" onclick="changeItemSize('{{ $key }}', 0.5)">Half</button>
-                                            <button class="size-btn-inline {{ $item['size'] == 1 ? 'active' : '' }}" onclick="changeItemSize('{{ $key }}', 1)">Full</button>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid #E0E0E0;">
+                                            <div>
+                                                <div style="font-weight: 600; color: #1E293B;">{{ $item['name'] }}</div>
+                                                <div style="font-size: 11px; color: #64748B;">{{ $item['size'] == 0.5 ? 'Half' : 'Full' }} portion</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td>{{ $item['quantity'] }}</td>
-                                    <td class="item-rate">Rs {{ number_format($item['unit_price'], 2) }}</td>
-                                    <td>0.00</td>
-                                    <td class="item-total">Rs {{ number_format($item['unit_price'] * $item['quantity'], 2) }}</td>
+                                    <td>Rs {{ number_format($item['unit_price'], 2) }}</td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 4px;">
+                                            <button onclick="updateQuantity('{{ $key }}', -1)" style="width: 28px; height: 28px; border: 1px solid #E0E0E0; background: white; border-radius: 4px; cursor: pointer; font-size: 16px; color: #1E293B;">-</button>
+                                            <span style="font-weight: 600; min-width: 30px; text-align: center;">{{ $item['quantity'] }}</span>
+                                            <button onclick="updateQuantity('{{ $key }}', 1)" style="width: 28px; height: 28px; border: 1px solid #E0E0E0; background: white; border-radius: 4px; cursor: pointer; font-size: 16px; color: #1E293B;">+</button>
+                                        </div>
+                                    </td>
+                                    <td><input type="number" value="0" min="0" max="100" style="width: 60px; padding: 4px 8px; border: 1px solid #E0E0E0; border-radius: 4px; font-size: 12px;"></td>
+                                    <td>Rs {{ number_format($item['unit_price'] * $item['quantity'], 2) }}</td>
+                                    <td>
+                                        <button onclick="deleteItem('{{ $key }}')" style="width: 32px; height: 32px; border: none; background: #FEE2E2; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            </svg>
+                                        </button>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" style="text-align:center;padding:20px;">No items</td>
+                                    <td colspan="7" style="text-align:center;padding:30px;color:#64748B;">No items in order</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Customer / Staff + Summary -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <!-- Customer / Staff -->
-                    <div class="card no-print">
-                        <div class="tabs">
-                            <button class="tab active" onclick="switchTab(this, 'customer')">Customer</button>
-                            <button class="tab" onclick="switchTab(this, 'staff')">Staff</button>
+                <!-- Special Instructions -->
+                <div class="card">
+                    <div class="card-title">Special Instructions</div>
+                    <textarea class="form-input" rows="2" placeholder="Add special instructions (e.g., Less spicy, no onion...)" style="resize:vertical;"></textarea>
+                </div>
+
+                <!-- Extra Charge & Complimentary -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="card">
+                        <div class="card-title" style="font-size: 13px;">Extra Charge</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" class="form-input" placeholder="Packaging Charge" style="flex: 1;">
+                            <input type="number" class="form-input" placeholder="Amount" style="width: 80px;">
+                            <button style="padding: 6px 12px; background: #1A73E8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">+ Add</button>
                         </div>
-                        <div id="customer-tab">
-                            <div style="position: relative; margin-bottom: 8px;">
-                                <div id="customerDropdown" style="width: 100%; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;" onclick="toggleCustomerDropdown()">
-                                    <span id="selectedCustomer">Walk-in Customer</span>
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"/>
-                                    </svg>
-                                </div>
-                                <div id="customerDropdownMenu" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 10; display: none; max-height: 200px; overflow-y: auto;">
-                                    <div style="padding: 6px 10px; cursor: pointer; font-size: 11px; color: #374151;" onclick="selectCustomer('Walk-in Customer')">Walk-in Customer</div>
-                                    <div style="padding: 6px 10px; cursor: pointer; font-size: 11px; color: #374151; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 4px;" onclick="openAddCustomerModal()">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19"/>
-                                            <line x1="5" y1="12" x2="19" y2="12"/>
-                                        </svg>
-                                        <span style="color: #3b82f6; font-weight: 600;">+ Add New Customer</span>
-                                    </div>
-                                </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title" style="font-size: 13px;">Complimentary</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="text" class="form-input" placeholder="Item name" style="flex: 1;">
+                            <input type="number" class="form-input" placeholder="Amount" style="width: 80px;">
+                            <button style="padding: 6px 12px; background: #1A73E8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">+ Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Bar -->
+                <div class="card" style="background: #F4F6F8; border: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                            <div>
+                                <span style="font-size: 12px; color: #64748B;">Item Total:</span>
+                                <span style="font-weight: 600; color: #1E293B; margin-left: 4px;">Rs {{ number_format($subtotal ?? 0, 2) }}</span>
+                            </div>
+                            <div>
+                                <span style="font-size: 12px; color: #DC2626;">Discount:</span>
+                                <span style="font-weight: 600; color: #DC2626; margin-left: 4px;">-Rs 0.00</span>
+                            </div>
+                            <div>
+                                <span style="font-size: 12px; color: #64748B;">Extra Charge:</span>
+                                <span style="font-weight: 600; color: #059669; margin-left: 4px;">+Rs 0.00</span>
+                            </div>
+                            <div>
+                                <span style="font-size: 12px; color: #64748B;">Complimentary:</span>
+                                <span style="font-weight: 600; color: #DC2626; margin-left: 4px;">-Rs 0.00</span>
                             </div>
                         </div>
-                        <div id="staff-tab" style="display:none;">
-                            <div style="color:#6b7280;font-size:11px;">{{ Auth::user()->name ?? 'N/A' }}</div>
-                        </div>
-                        <!-- Remarks -->
-                        <div style="margin-top: 8px;">
-                            <textarea class="form-input" rows="2" placeholder="Add remarks to invoice" style="resize:vertical;"></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Summary -->
-                    <div class="card">
-                        <div class="card-title">Totals</div>
-                        <div class="summary-row">
-                            <span class="summary-label">Item Total</span>
-                            <span class="summary-value">Rs {{ number_format($subtotal ?? 0, 2) }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Sub Total</span>
-                            <span class="summary-value">Rs {{ number_format($subtotal ?? 0, 2) }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Discount (-)</span>
-                            <span class="summary-value">0.00</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Taxable Amount</span>
-                            <span class="summary-value">Rs {{ number_format($subtotal ?? 0, 2) }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">+ No Tax</span>
-                            <span class="summary-value">0</span>
-                        </div>
-                        <div class="summary-row" style="margin-top: 4px; padding-top: 6px;">
-                            <span class="summary-label" style="font-weight: 600;">Total Amount</span>
-                            <span class="summary-value summary-total">Rs {{ number_format($grandTotal ?? $subtotal ?? 0, 2) }}</span>
+                        <div>
+                            <span style="font-size: 13px; color: #64748B;">Grand Total:</span>
+                            <span style="font-size: 18px; font-weight: 700; color: #1A73E8; margin-left: 8px;">Rs {{ number_format($grandTotal ?? $subtotal ?? 0, 2) }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tender Amount + Payment Mode -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <!-- Tender Amount -->
-                    <div class="card no-print">
-                        <div class="card-title">Tender Amount</div>
-                        <input type="number" class="form-input" id="tenderAmount" value="{{ number_format($grandTotal ?? $subtotal ?? 0, 2, '.', '') }}" placeholder="0.00" style="font-size: 14px; font-weight: 600;">
-                    </div>
-
-                    <!-- Payment Mode -->
-                    <div class="card no-print">
-                        <div class="card-title">Payment Mode *</div>
-                        <div class="payment-tabs">
-                            <button class="payment-tab active" data-status="paid" onclick="selectPaymentStatus(this, 'paid')">Paid</button>
-                            <button class="payment-tab" data-status="unpaid" onclick="selectPaymentStatus(this, 'unpaid')">Unpaid / Credit</button>
-                            <button class="payment-tab" data-status="partial" onclick="selectPaymentStatus(this, 'partial')">Partial</button>
+                <!-- Customer Selection -->
+                <div class="card">
+                    <div class="card-title">Customer</div>
+                    <div style="position: relative;">
+                        <div id="customerDropdown" style="width: 100%; padding: 10px 12px; border: 1px solid #E0E0E0; border-radius: 8px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;" onclick="toggleCustomerDropdown()">
+                            <span id="selectedCustomer" style="font-weight: 500; color: #1E293B;">Walk-in Customer</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
                         </div>
-                        <div class="payment-methods">
-                            <button class="payment-method active" data-method="cash" onclick="selectPaymentMethod(this, 'cash')">Cash</button>
-                            <button class="payment-method" data-method="nepal_pay" onclick="selectPaymentMethod(this, 'nepal_pay')">Nepal Pay</button>
-                            <button class="payment-method" data-method="card" onclick="selectPaymentMethod(this, 'card')">Card</button>
-                            <button class="payment-method" data-method="fonepay" onclick="selectPaymentMethod(this, 'fonepay')">Fonepay</button>
-                            <button class="payment-method" data-method="bank_transfer" onclick="selectPaymentMethod(this, 'bank_transfer')">Bank Transfer</button>
+                        <div id="customerDropdownMenu" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #E0E0E0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 10; display: none; max-height: 250px; overflow-y: auto; margin-top: 4px;">
+                            <div style="padding: 8px 12px; border-bottom: 1px solid #E0E0E0;">
+                                <input type="text" placeholder="Search or select customer..." style="width: 100%; padding: 8px; border: 1px solid #E0E0E0; border-radius: 6px; font-size: 12px;">
+                            </div>
+                            <div style="padding: 8px 12px; cursor: pointer; font-size: 13px; color: #1E293B; display: flex; align-items: center; gap: 8px;" onclick="selectCustomer('Walk-in Customer')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span>Walk-in Customer</span>
+                                <span style="font-size: 11px; color: #64748B; margin-left: auto;">Auto</span>
+                            </div>
+                            <div style="padding: 8px 12px; cursor: pointer; font-size: 13px; color: #1E293B; border-top: 1px solid #F4F6F8;" onclick="selectCustomer('Ram Bahadur')">
+                                <span>Ram Bahadur</span>
+                                <span style="font-size: 11px; color: #64748B; margin-left: auto;">9841234567</span>
+                            </div>
+                            <div style="padding: 8px 12px; cursor: pointer; font-size: 13px; color: #1E293B; border-top: 1px solid #F4F6F8;" onclick="selectCustomer('Sita Devi')">
+                                <span>Sita Devi</span>
+                                <span style="font-size: 11px; color: #64748B; margin-left: auto;">9847654321</span>
+                            </div>
+                            <div style="padding: 12px; cursor: pointer; font-size: 13px; color: #1A73E8; font-weight: 600; border-top: 1px solid #E0E0E0; display: flex; align-items: center; gap: 8px; background: #F4F6F8;" onclick="openAddCustomerModal()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                <span>+ Add New Customer</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Net Sales -->
-                <div class="net-sales no-print">
-                    <div class="net-sales-label">Net sales amount</div>
-                    <div class="net-sales-amount">Rs {{ number_format($grandTotal ?? $subtotal ?? 0, 2) }}</div>
+                <!-- Payment Method -->
+                <div class="card">
+                    <div class="card-title">Payment Method</div>
+                    <div class="payment-methods">
+                        <button class="payment-method active" data-method="cash" onclick="selectPaymentMethod(this, 'cash')">Cash</button>
+                        <button class="payment-method" data-method="nepal_pay" onclick="selectPaymentMethod(this, 'nepal_pay')">Nepal Pay</button>
+                        <button class="payment-method" data-method="card" onclick="selectPaymentMethod(this, 'card')">Card</button>
+                        <button class="payment-method" data-method="fonepay" onclick="selectPaymentMethod(this, 'fonepay')">Fonepay</button>
+                        <button class="payment-method" data-method="bank_transfer" onclick="selectPaymentMethod(this, 'bank_transfer')">Bank Transfer</button>
+                    </div>
                 </div>
 
-                <!-- Checkout Actions -->
-                <div class="checkout-actions no-print">
-                    <button class="checkout-btn checkout-btn-secondary" onclick="printEstimate()">Confirm & Print</button>
-                    <button class="checkout-btn checkout-btn-primary" onclick="completeCheckout()">Confirm Checkout</button>
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 12px; margin-top: auto;">
+                    <button class="checkout-btn" style="flex: 1; padding: 14px; border: 2px solid #E0E0E0; background: white; border-radius: 8px; font-size: 14px; font-weight: 600; color: #64748B; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#F4F6F8'" onmouseout="this.style.background='white'">Cancel</button>
+                    <button class="checkout-btn" style="flex: 2; padding: 14px; border: none; background: linear-gradient(135deg, #1A73E8 0%, #0066FF 100%); border-radius: 8px; font-size: 14px; font-weight: 700; color: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">Confirm & Complete Order</button>
                 </div>
             </div>
 
             <!-- Right Invoice Panel -->
             <div class="checkout-invoice-panel print-area">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <!-- Invoice Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #E0E0E0;">
                     <div style="flex: 1;">
-                        <div class="estimate-header">ESTIMATE INVOICE</div>
-                        <div class="estimate-row">
-                            <span>Invoice No:</span>
-                            <span>##</span>
-                        </div>
-                        <div class="estimate-row">
-                            <span>Date:</span>
-                            <span>{{ now()->format('M d, Y') }}</span>
-                        </div>
-                        <div class="estimate-row">
-                            <span>Dine In:</span>
-                            <span>{{ $table->name ?? 'N/A' }}</span>
-                        </div>
-                        <div class="estimate-row">
-                            <span>Customer:</span>
-                            <span>Walk-in Customer</span>
-                        </div>
+                        <h3 style="font-size: 16px; font-weight: 700; color: #1E293B; margin: 0 0 8px 0;">Checkout Summary</h3>
+                        <div style="font-size: 11px; color: #64748B; margin-bottom: 4px;">Invoice No: #1045</div>
+                        <div style="font-size: 11px; color: #64748B; margin-bottom: 4px;">Date: {{ now()->format('M d, Y') }}</div>
+                        <div style="font-size: 11px; color: #64748B; margin-bottom: 4px;">Time: {{ now()->format('h:i A') }}</div>
+                        <div style="font-size: 11px; color: #64748B; margin-bottom: 4px;">Table: {{ $table->name ?? '5' }} Dine In</div>
+                        <div style="font-size: 11px; color: #64748B;">Customer: <span id="invoiceCustomer">Walk-in Customer</span></div>
                     </div>
                     <div style="text-align: center; margin-left: 8px;">
                         <div style="width: 50px; height: 50px; background: #fef9c3; border: 1px solid #fcd34d; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
@@ -859,87 +884,98 @@
                         <div style="font-size: 7px; color: #78350f; max-width: 50px;">Scan for full bill details & pay</div>
                     </div>
                 </div>
-                <div class="estimate-particular">
-                    <div class="estimate-particular-title">Particular</div>
-                    @php
-                        $estimateGrouped = [];
-                        if (isset($orders)) {
-                            foreach ($orders as $ord) {
-                                foreach ($ord->items as $item) {
-                                    $menuItem = $item->menuItem ?? null;
-                                    $key = $item->menu_item_id . '-' . ($item->size ?? 1);
-                                    if (!isset($estimateGrouped[$key])) {
-                                        $estimateGrouped[$key] = [
-                                            'name' => $menuItem->name ?? 'Item',
-                                            'quantity' => 0,
-                                            'unit_price' => $item->unit_price ?? 0,
-                                            'size' => $item->size ?? 1,
-                                        ];
+
+                <!-- Invoice Items Table -->
+                <div style="margin-bottom: 12px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #F4F6F8; border-bottom: 1px solid #E0E0E0;">
+                                <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #1E293B;">S.N</th>
+                                <th style="padding: 6px 8px; text-align: left; font-weight: 600; color: #1E293B;">Item</th>
+                                <th style="padding: 6px 8px; text-align: right; font-weight: 600; color: #1E293B;">Rate</th>
+                                <th style="padding: 6px 8px; text-align: right; font-weight: 600; color: #1E293B;">Qty</th>
+                                <th style="padding: 6px 8px; text-align: right; font-weight: 600; color: #1E293B;">Disc%</th>
+                                <th style="padding: 6px 8px; text-align: right; font-weight: 600; color: #1E293B;">Charge</th>
+                                <th style="padding: 6px 8px; text-align: right; font-weight: 600; color: #1E293B;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $estimateGrouped = [];
+                                if (isset($orders)) {
+                                    foreach ($orders as $ord) {
+                                        foreach ($ord->items as $item) {
+                                            $menuItem = $item->menuItem ?? null;
+                                            $key = $item->menu_item_id . '-' . ($item->size ?? 1);
+                                            if (!isset($estimateGrouped[$key])) {
+                                                $estimateGrouped[$key] = [
+                                                    'name' => $menuItem->name ?? 'Item',
+                                                    'quantity' => 0,
+                                                    'unit_price' => $item->unit_price ?? 0,
+                                                    'size' => $item->size ?? 1,
+                                                ];
+                                            }
+                                            $estimateGrouped[$key]['quantity'] += $item->quantity ?? 0;
+                                        }
                                     }
-                                    $estimateGrouped[$key]['quantity'] += $item->quantity ?? 0;
                                 }
-                            }
-                        }
-                    @endphp
-                    @forelse($estimateGrouped as $item)
-                        <div class="estimate-row">
-                            <span>{{ $item['name'] }}</span>
-                            <span>{{ number_format($item['unit_price'], 2) }}</span>
-                        </div>
-                        <div class="estimate-row">
-                            <span>{{ $item['quantity'] }}</span>
-                            <span>{{ number_format($item['unit_price'] * $item['quantity'], 2) }}</span>
-                        </div>
-                    @empty
-                        <div class="estimate-row">
-                            <span>No items</span>
-                        </div>
-                    @endforelse
+                                $sn = 1;
+                            @endphp
+                            @forelse($estimateGrouped as $item)
+                                <tr style="border-bottom: 1px solid #F4F6F8;">
+                                    <td style="padding: 6px 8px; color: #1E293B;">{{ $sn++ }}</td>
+                                    <td style="padding: 6px 8px; color: #1E293B;">{{ $item['name'] }}</td>
+                                    <td style="padding: 6px 8px; text-align: right; color: #1E293B;">{{ number_format($item['unit_price'], 2) }}</td>
+                                    <td style="padding: 6px 8px; text-align: right; color: #1E293B;">{{ $item['quantity'] }}</td>
+                                    <td style="padding: 6px 8px; text-align: right; color: #1E293B;">0</td>
+                                    <td style="padding: 6px 8px; text-align: right; color: #1E293B;">{{ number_format($item['unit_price'], 2) }}</td>
+                                    <td style="padding: 6px 8px; text-align: right; color: #1E293B; font-weight: 600;">{{ number_format($item['unit_price'] * $item['quantity'], 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" style="text-align:center;padding:20px;color:#64748B;">No items</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
-                <div class="estimate-row">
-                    <span>Total (Particular/QTY)</span>
-                    <span>{{ count($estimateGrouped ?? []) }}/3</span>
+
+                <!-- Invoice Calculation Footer -->
+                <div style="border-top: 1px solid #E0E0E0; padding-top: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: #64748B;">
+                        <span>Item Total</span>
+                        <span>Rs {{ number_format($subtotal ?? 0, 2) }}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: #DC2626;">
+                        <span>Item Discount</span>
+                        <span>-Rs 0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px; color: #64748B;">
+                        <span>Extra Charges</span>
+                        <span>+Rs 0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #E0E0E0;">
+                        <span style="font-size: 13px; font-weight: 700; color: #1E293B;">Grand Total</span>
+                        <span style="font-size: 16px; font-weight: 700; color: #1A73E8;">Rs {{ number_format($grandTotal ?? $subtotal ?? 0, 2) }}</span>
+                    </div>
                 </div>
-                <div class="estimate-row">
-                    <span>Rs</span>
-                    <span>{{ number_format($grandTotal ?? $subtotal ?? 0, 2) }}</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Amount in words:</span>
-                    <span>Two Hundred Sixty Five Nepalese Rupee Only</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Payment Mode:</span>
-                    <span>Unpaid (Rs {{ number_format($grandTotal ?? $subtotal ?? 0, 2) }})</span>
-                </div>
-                <div class="estimate-row">
-                    <span>KOT No: 1 (by {{ Auth::user()->name ?? 'john doe' }})</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Billed By: {{ Auth::user()->name ?? 'john doe' }}</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Service Duration: 4 days 21 hrs 15 mins</span>
-                </div>
-                <div style="text-align:center;margin-top:12px;font-weight:600;color:#92400e;font-size:11px;">
-                    This is not a Tax Invoice!<br>
-                    Kindly accept the original bill from the counter.
-                </div>
-                <div style="text-align:center;margin-top:12px;color:#78350f;font-size:11px;">
-                    Thank You<br>
-                    Thank you for your visit! Visit again
-                </div>
-                
+
                 <!-- Payment Calculation Fields -->
-                <div style="border-top: 1px solid #fcd34d; padding-top: 10px; margin-top: 10px;">
-                    <div style="margin-bottom: 6px;">
-                        <label style="font-size: 9px; color: #78350f; font-weight: 600; display: block; margin-bottom: 3px;">Amount Received</label>
-                        <input type="number" id="invoiceAmountReceived" style="width: 100%; padding: 6px; border: 1px solid #fcd34d; border-radius: 2px; font-size: 10px;" placeholder="0.00" oninput="calculateChangeDue()">
+                <div style="border-top: 1px solid #E0E0E0; padding-top: 12px;">
+                    <div style="margin-bottom: 8px;">
+                        <label style="font-size: 11px; color: #1E293B; font-weight: 600; display: block; margin-bottom: 4px;">Amount Received</label>
+                        <input type="number" id="invoiceAmountReceived" value="{{ number_format($grandTotal ?? $subtotal ?? 0, 2, '.', '') }}" style="width: 100%; padding: 8px 12px; border: 1px solid #E0E0E0; border-radius: 6px; font-size: 13px; font-weight: 600;" placeholder="0.00" oninput="calculateChangeDue()">
                     </div>
                     <div>
-                        <label style="font-size: 9px; color: #78350f; font-weight: 600; display: block; margin-bottom: 3px;">Change Due</label>
-                        <div id="invoiceChangeDue" style="width: 100%; padding: 6px; background: #fef9c3; border: 1px solid #fcd34d; border-radius: 2px; font-size: 10px; font-weight: 700; color: #059669;">Rs 0.00</div>
+                        <label style="font-size: 11px; color: #1E293B; font-weight: 600; display: block; margin-bottom: 4px;">Change Due</label>
+                        <div id="invoiceChangeDue" style="width: 100%; padding: 8px 12px; background: #F4F6F8; border: 1px solid #E0E0E0; border-radius: 6px; font-size: 14px; font-weight: 700; color: #059669;">Rs 0.00</div>
                     </div>
+                </div>
+
+                <!-- Footer Note -->
+                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #E0E0E0; text-align: center;">
+                    <div style="font-size: 10px; color: #64748B; margin-bottom: 4px;">Thank you for your visit!</div>
+                    <div style="font-size: 10px; color: #64748B;">DMC Restro - Good Food Good Mood</div>
                 </div>
             </div>
         </div>
@@ -1092,6 +1128,92 @@
     <script>
         let selectedPaymentStatus = 'paid';
         let selectedPaymentMethod = 'cash';
+
+        // Toggle customer dropdown
+        function toggleCustomerDropdown() {
+            const menu = document.getElementById('customerDropdownMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Select customer from dropdown
+        function selectCustomer(customerName) {
+            document.getElementById('selectedCustomer').textContent = customerName;
+            document.getElementById('customerDropdownMenu').style.display = 'none';
+        }
+        
+        // Open add customer modal
+        function openAddCustomerModal() {
+            document.getElementById('customerDropdownMenu').style.display = 'none';
+            document.getElementById('addCustomerModalOverlay').classList.add('show');
+        }
+        
+        // Close add customer modal
+        function closeAddCustomerModal() {
+            document.getElementById('addCustomerModalOverlay').classList.remove('show');
+        }
+        
+        // Save new customer
+        function saveNewCustomer() {
+            const name = document.getElementById('newCustomerName').value.trim();
+            const phone = document.getElementById('newCustomerPhone').value.trim();
+            const address = document.getElementById('newCustomerAddress').value.trim();
+            
+            if (!name || !phone) {
+                alert('Please fill in required fields (Full Name and Phone Number)');
+                return;
+            }
+            
+            // Add customer to dropdown (in real implementation, save to database)
+            const menu = document.getElementById('customerDropdownMenu');
+            const newOption = document.createElement('div');
+            newOption.style.cssText = 'padding: 6px 10px; cursor: pointer; font-size: 11px; color: #374151;';
+            newOption.textContent = name;
+            newOption.onclick = () => selectCustomer(name);
+            menu.insertBefore(newOption, menu.lastElementChild);
+            
+            // Select the new customer
+            selectCustomer(name);
+            
+            // Clear form and close modal
+            document.getElementById('newCustomerName').value = '';
+            document.getElementById('newCustomerPhone').value = '';
+            document.getElementById('newCustomerAddress').value = '';
+            closeAddCustomerModal();
+        }
+        
+        // Calculate change due
+        function calculateChangeDue() {
+            const amountReceived = parseFloat(document.getElementById('invoiceAmountReceived').value) || 0;
+            const grandTotal = parseFloat({{ $grandTotal ?? $subtotal ?? 0 }});
+            const changeDue = Math.max(0, amountReceived - grandTotal);
+            document.getElementById('invoiceChangeDue').textContent = 'Rs ' + changeDue.toFixed(2);
+        }
+        
+        // Update quantity
+        function updateQuantity(itemKey, change) {
+            const row = document.querySelector(`tr[data-item-key="${itemKey}"]`);
+            if (!row) return;
+            
+            const qtySpan = row.querySelector('td:nth-child(4) span');
+            const currentQty = parseInt(qtySpan.textContent);
+            const newQty = Math.max(1, currentQty + change);
+            qtySpan.textContent = newQty;
+            
+            // Update charge
+            const basePrice = parseFloat(row.dataset.basePrice);
+            const chargeCell = row.querySelector('td:nth-child(6)');
+            chargeCell.textContent = (basePrice * newQty).toFixed(2);
+        }
+        
+        // Delete item
+        function deleteItem(itemKey) {
+            if (confirm('Remove this item from order?')) {
+                const row = document.querySelector(`tr[data-item-key="${itemKey}"]`);
+                if (row) {
+                    row.remove();
+                }
+            }
+        }
 
         function switchTab(btn, tabName) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
