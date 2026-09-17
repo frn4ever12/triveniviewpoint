@@ -1,6 +1,12 @@
 @extends('admin.includes.main')
 @section('title', 'Orders')
 
+@push('head')
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+@endpush
+
 @section('content')
     <div class="container-fluid px-3 px-lg-4 py-3">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
