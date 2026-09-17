@@ -1,0 +1,491 @@
+
+
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                Today's Orders
+            </h4>
+            <a href="<?php echo e(route('admin.orders.pos')); ?>" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Order
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <?php if($orders->count()): ?>
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Order No</th>
+                            <th>Table</th>
+                            <th>Total</th>
+                            <th>Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php $__currentLoopData = $orders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <tr>
+                            <td><?php echo e($loop->iteration); ?></td>
+                            <td><strong>#<?php echo e($order->order_no); ?></strong></td>
+                            <td><?php echo e($order->table->name ?? 'No Table'); ?></td>
+                            <td>Rs.<?php echo e(number_format($order->invoice->total_amount, 2)); ?></td>
+                            <td title="<?php echo e($order->created_at); ?>"><?php echo e($order->created_at->diffForHumans()); ?></td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <?php if(!in_array($order->status, ['completed', 'cancelled'])): ?>
+                                    <button class="btn btn-success btn-sm" onclick="openAddItemsModal(<?php echo e($order->id); ?>, <?php echo e($order->table_id ?? 'null'); ?>, '<?php echo e($order->order_no); ?>')">
+                                        <i class="fas fa-plus"></i> Add Items
+                                    </button>
+                                    <?php endif; ?>
+                                    <button class="btn btn-primary btn-sm" onclick="printBill(<?php echo e($order->id); ?>)">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                    <?php if(!in_array($order->status, ['completed', 'cancelled'])): ?>
+                                    <button class="btn btn-warning btn-sm" onclick="cancelOrder(<?php echo e($order->id); ?>)">
+                                        <i class="fas fa-ban"></i> Cancel
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteOrder(<?php echo e($order->id); ?>)">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <div id="print-content-<?php echo e($order->id); ?>" style="display:none;">
+                            <div class="print-bill">
+                                <div class="print-header">
+                                    <h4><?php echo e($siteName); ?></h4>
+                                    <p><?php echo e($address); ?></p>
+                                    <p><?php echo e($contactPhone); ?></p>
+                                </div>
+                                <div class="print-order-info">
+                                    <div class="print-order-row">
+                                        <span>Order No:</span>
+                                        <span>#<?php echo e($order->order_no); ?></span>
+                                    </div>
+                                    <div class="print-order-row">
+                                        <span>Table:</span>
+                                        <span><?php echo e($order->table->name ?? 'N/A'); ?></span>
+                                    </div>
+                                    <div class="print-order-row">
+                                        <span>Date:</span>
+                                        <span><?php echo e($order->created_at->format('d M Y, h:i A')); ?></span>
+                                    </div>
+                                </div>
+                                <div class="print-items">
+    <?php $__currentLoopData = $order->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    <div class="print-item" style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
+        <div style="flex: 1;">
+            <div style="font-weight:bold;"><?php echo e($item->dish->name ?? 'Unknown Item'); ?></div>
+            <?php if($item->quantity > 1): ?>
+                <div style="font-size:10px; color:#666;">
+                    <?php echo e($item->quantity); ?> x Rs.<?php echo e(number_format($item->unit_price, 2)); ?>
+
+                </div>
+            <?php endif; ?>
+            <?php if($item->notes): ?>
+                <div style="font-size:9px; color:#888; font-style:italic;">
+                    Note: <?php echo e($item->notes); ?>
+
+                </div>
+            <?php endif; ?>
+        </div>
+        <div style="font-weight:bold;">Rs.<?php echo e(number_format($item->total, 2)); ?></div>
+    </div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+</div>
+                                <div class="print-footer" style="text-align:center; padding:15px 10px; border-top:2px dashed #333; font-size:10px; margin-top:15px;">
+                                    Thank you for dining with us!<br>Please visit again.
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </tbody>
+                </table>
+                <?php else: ?>
+                <p class="text-center text-muted">No orders found for the selected date range.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Items Modal -->
+<div class="modal fade" id="addItemsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Items to Order #<span id="modalOrderNo"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="addItemsOrderId">
+                <input type="hidden" id="addItemsTableId">
+                
+                <div class="mb-3">
+                    <label class="form-label">Select Items</label>
+                    <div id="menuItemsContainer" class="row g-2">
+                        <!-- Menu items will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Selected Items</label>
+                    <div id="selectedItemsContainer" class="border p-2" style="min-height: 100px;">
+                        <p class="text-muted mb-0">No items selected</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea id="addItemsNotes" class="form-control" rows="2" placeholder="Any special instructions..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddItems()">Add Items</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('.table').DataTable({
+            order: [[0, 'asc']],
+            pageLength: 10,
+        });
+    });
+
+    // Cancel entire order
+    async function cancelOrder(orderId) {
+        if (!confirm('Cancel entire order? All items will be cancelled.')) return;
+        try {
+            const response = await fetch('/admin/orders/' + orderId + '/cancel', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await response.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                if (window.showToast) showToast('error', data.message || 'Failed to cancel order');
+                else alert(data.message || 'Failed to cancel order');
+            }
+        } catch (error) {
+            if (window.showToast) showToast('error', 'Failed to cancel order');
+            else alert('Failed to cancel order');
+        }
+    }
+
+    // Delete order
+    async function deleteOrder(orderId) {
+        if (!confirm('Are you sure you want to permanently delete this order? This cannot be undone.')) return;
+        try {
+            const response = await fetch('/admin/orders/' + orderId, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (window.showToast) showToast('success', 'Order deleted successfully');
+                else alert('Order deleted successfully');
+                location.reload();
+            } else {
+                if (window.showToast) showToast('error', data.message || 'Failed to delete order');
+                else alert(data.message || 'Failed to delete order');
+            }
+        } catch (error) {
+            if (window.showToast) showToast('error', 'Failed to delete order');
+            else alert('Failed to delete order');
+        }
+    }
+
+    function printBill(orderId) {
+        const printContent = document.getElementById('print-content-' + orderId).innerHTML;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Receipt - Order #${orderId}</title>
+                <style>
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        font-family: 'Courier New', monospace;
+                        font-size: 11px;
+                        line-height: 1.2;
+                        width: 100%;
+                        max-width: 400px;
+                        margin: 0 auto;
+                    }
+                    .print-header {
+                        text-align: center;
+                        padding: 15px 10px;
+                        border-bottom: 2px dashed #333;
+                        background: #000;
+                        color: white;
+                        margin-bottom: 10px;
+                    }
+                    .print-header h4 {
+                        font-size: 14px;
+                        margin: 5px 0;
+                        font-weight: bold;
+                    }
+                    .print-header p {
+                        font-size: 10px;
+                        margin: 2px 0;
+                    }
+                    .print-order-info {
+                        padding: 0 10px 10px;
+                        border-bottom: 1px dashed #333;
+                        margin-bottom: 10px;
+                    }
+                    .print-order-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 3px;
+                        font-size: 11px;
+                    }
+                    .print-items {
+                        padding: 0 10px 10px;
+                        margin-bottom: 10px;
+                    }
+                    .print-item {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 6px;
+                        font-size: 11px;
+                        padding-right: 10px;
+                    }
+                    .print-item-name {
+                        flex: 1;
+                        font-weight: bold;
+                    }
+                    .print-item-total {
+                        min-width: 60px;
+                        text-align: right;
+                        font-weight: bold;
+                    }
+                    .print-order-total {
+                        border-top: 1px dashed #333;
+                        padding-top: 5px;
+                        margin-top: 5px;
+                        font-weight: bold;
+                        font-size: 11px;
+                        text-align: right;
+                    }
+                    .print-calc {
+                        padding: 0 10px;
+                        border-top: 1px dashed #333;
+                        margin-top: 10px;
+                    }
+                    .print-calc-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 4px;
+                        font-size: 11px;
+                    }
+                    .print-total {
+                        font-weight: bold;
+                        font-size: 13px;
+                        border-top: 2px solid #333;
+                        border-bottom: 2px solid #333;
+                        padding: 6px 0;
+                        margin: 8px 0;
+                    }
+                    .print-footer {
+                        text-align: center;
+                        padding: 15px 10px;
+                        border-top: 2px dashed #333;
+                        font-size: 10px;
+                        margin-top: 15px;
+                    }
+                    .no-print {
+                        display: none !important;
+                    }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+
+        printWindow.onload = function () {
+            printWindow.print();
+        };
+    }
+
+    // Add Items to Order
+    let selectedItems = [];
+    
+    function openAddItemsModal(orderId, tableId, orderNo) {
+        document.getElementById('addItemsOrderId').value = orderId;
+        document.getElementById('addItemsTableId').value = tableId || '';
+        document.getElementById('modalOrderNo').textContent = orderNo;
+        document.getElementById('addItemsNotes').value = '';
+        selectedItems = [];
+        updateSelectedItemsDisplay();
+        
+        // Load menu items
+        loadMenuItems();
+        
+        const modal = new bootstrap.Modal(document.getElementById('addItemsModal'));
+        modal.show();
+    }
+    
+    async function loadMenuItems() {
+        try {
+            const response = await fetch('/admin/menu-items');
+            const data = await response.json();
+            
+            const container = document.getElementById('menuItemsContainer');
+            container.innerHTML = '';
+            
+            if (data.success && data.items) {
+                data.items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'col-md-4 col-sm-6';
+                    itemDiv.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-body p-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="item-${item.id}" value="${item.id}" onchange="toggleItemSelection(${item.id}, '${item.name}', ${item.price})">
+                                    <label class="form-check-label" for="item-${item.id}" style="cursor: pointer;">
+                                        <div style="font-weight: 600;">${item.name}</div>
+                                        <div style="font-size: 0.85rem; color: #666;">Rs. ${item.price}</div>
+                                    </label>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="number" class="form-control form-control-sm" id="qty-${item.id}" value="1" min="1" max="99" style="width: 70px;" onchange="updateItemQuantity(${item.id})">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(itemDiv);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load menu items:', error);
+            alert('Failed to load menu items');
+        }
+    }
+    
+    function toggleItemSelection(itemId, name, price) {
+        const checkbox = document.getElementById(`item-${itemId}`);
+        const qtyInput = document.getElementById(`qty-${itemId}`);
+        const quantity = parseInt(qtyInput.value) || 1;
+        
+        if (checkbox.checked) {
+            selectedItems.push({
+                menu_item_id: itemId,
+                name: name,
+                unit_price: price,
+                quantity: quantity
+            });
+        } else {
+            selectedItems = selectedItems.filter(item => item.menu_item_id !== itemId);
+        }
+        
+        updateSelectedItemsDisplay();
+    }
+    
+    function updateItemQuantity(itemId) {
+        const qtyInput = document.getElementById(`qty-${itemId}`);
+        const quantity = parseInt(qtyInput.value) || 1;
+        
+        const item = selectedItems.find(i => i.menu_item_id === itemId);
+        if (item) {
+            item.quantity = quantity;
+        }
+        
+        updateSelectedItemsDisplay();
+    }
+    
+    function updateSelectedItemsDisplay() {
+        const container = document.getElementById('selectedItemsContainer');
+        
+        if (selectedItems.length === 0) {
+            container.innerHTML = '<p class="text-muted mb-0">No items selected</p>';
+            return;
+        }
+        
+        let html = '<div class="row">';
+        selectedItems.forEach(item => {
+            html += `
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>Rs. ${(item.unit_price * item.quantity).toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        const total = selectedItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        html += `<div class="mt-2 pt-2 border-top"><strong>Total: Rs. ${total.toFixed(2)}</strong></div>`;
+        
+        container.innerHTML = html;
+    }
+    
+    async function submitAddItems() {
+        if (selectedItems.length === 0) {
+            alert('Please select at least one item');
+            return;
+        }
+        
+        const orderId = document.getElementById('addItemsOrderId').value;
+        const tableId = document.getElementById('addItemsTableId').value;
+        const notes = document.getElementById('addItemsNotes').value;
+        
+        try {
+            const response = await fetch(`/admin/tables/${tableId}/add-items`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    items: selectedItems,
+                    notes: notes
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Items added successfully!');
+                bootstrap.Modal.getInstance(document.getElementById('addItemsModal')).hide();
+                location.reload();
+            } else {
+                alert('Failed to add items: ' + (data.message || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error adding items:', error);
+            alert('Failed to add items');
+        }
+    }
+</script>
+<?php /**PATH D:\DMCRESTRO\singlerestro-main\resources\views/admin/order/todaysorder.blade.php ENDPATH**/ ?>
