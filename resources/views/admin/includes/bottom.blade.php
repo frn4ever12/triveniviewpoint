@@ -13,3 +13,14 @@
 
 <script src="{{ asset('assets/js/nepali.datepicker.v5.0.6.min.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('assets/js/npdate.js') }}?v={{ time() }}"></script>
+
+<!-- Service Worker disabled temporarily to force cache refresh -->
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+            }
+        });
+    }
+</script>
