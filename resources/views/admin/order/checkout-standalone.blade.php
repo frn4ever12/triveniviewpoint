@@ -331,7 +331,7 @@
         }
 
         .payment-method {
-            padding: 8px 4px;
+            padding: 10px 8px;
             border: 1px solid #E0E0E0;
             background: white;
             border-radius: 6px;
@@ -340,6 +340,11 @@
             font-size: 11px;
             font-weight: 500;
             transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
 
         .payment-method:hover {
@@ -847,11 +852,38 @@
                 <div class="card">
                     <div class="card-title">Payment Method</div>
                     <div class="payment-methods">
-                        <button class="payment-method active" data-method="cash" onclick="selectPaymentMethod(this, 'cash')">Cash</button>
-                        <button class="payment-method" data-method="nepal_pay" onclick="selectPaymentMethod(this, 'nepal_pay')">Nepal Pay</button>
-                        <button class="payment-method" data-method="card" onclick="selectPaymentMethod(this, 'card')">Card</button>
-                        <button class="payment-method" data-method="fonepay" onclick="selectPaymentMethod(this, 'fonepay')">Fonepay</button>
-                        <button class="payment-method" data-method="bank_transfer" onclick="selectPaymentMethod(this, 'bank_transfer')">Bank Transfer</button>
+                        <button class="payment-method active" data-method="cash" onclick="selectPaymentMethod(this, 'cash')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 4px;">
+                                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                                <line x1="2" y1="10" x2="22" y2="10"/>
+                            </svg>
+                            Cash
+                        </button>
+                        <button class="payment-method" data-method="esewa" onclick="selectPaymentMethod(this, 'esewa')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom: 4px;">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm-1-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm5 7h-2v-4h-2v-2h4v6z"/>
+                            </svg>
+                            eSewa
+                        </button>
+                        <button class="payment-method" data-method="khalti" onclick="selectPaymentMethod(this, 'khalti')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom: 4px;">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            Khalti
+                        </button>
+                        <button class="payment-method" data-method="card" onclick="selectPaymentMethod(this, 'card')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 4px;">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                            Card
+                        </button>
+                        <button class="payment-method" data-method="fonepay" onclick="selectPaymentMethod(this, 'fonepay')">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom: 4px;">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                            </svg>
+                            Fonepay
+                        </button>
                     </div>
                 </div>
 
@@ -1139,6 +1171,7 @@
         function selectCustomer(customerName) {
             document.getElementById('selectedCustomer').textContent = customerName;
             document.getElementById('customerDropdownMenu').style.display = 'none';
+            document.getElementById('invoiceCustomer').textContent = customerName;
         }
         
         // Open add customer modal
