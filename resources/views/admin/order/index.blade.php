@@ -2112,20 +2112,7 @@
 
     // Quick Billing Modal Functions
     // Variables already declared at top of script
-
-    // Open Quick Billing modal
-    function openQuickBilling() {
-        const modal = new bootstrap.Modal(document.getElementById('quickBillingModal'));
-        modal.show();
-        // Generate order number
-        quickOrderNumber = 'QB' + Date.now().toString().slice(-4);
-        document.getElementById('quickOrderNumber').textContent = quickOrderNumber;
-        // Reset cart
-        quickCart = [];
-        updateQuickCartDisplay();
-        // Focus search
-        setTimeout(() => document.getElementById('quickDishSearch').focus(), 500);
-    }
+    // openQuickBilling function already defined above
 
     // Category filter
     document.querySelectorAll('#quickMenuCategories button').forEach(btn => {
