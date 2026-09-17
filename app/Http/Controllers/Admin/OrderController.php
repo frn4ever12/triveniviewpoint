@@ -346,22 +346,28 @@ class OrderController extends Controller
         try {
             $tenantId = auth()->user()->tenant_id;
 
-            \Log::info('getRecentOrders called', ['tenant_id' => $tenantId]);
+            // Get order counts by type using efficient queries
+            $counts = [
+                'all' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', '!=', 'completed')->count(),
+                'dine_in' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('order_type', 'dine_in')->where('status', '!=', 'completed')->count(),
+                'takeaway' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('order_type', 'takeaway')->where('status', '!=', 'completed')->count(),
+                'delivery' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('order_type', 'delivery')->where('status', '!=', 'completed')->count(),
+                'online' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('order_type', 'online')->where('status', '!=', 'completed')->count(),
+                'cancelled' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', 'cancelled')->count(),
+                'history' => Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('status', 'completed')->count(),
+            ];
 
-            // Get all active orders for the tenant
+            // Get only active orders for the tenant with optimized eager loading
             $orders = Order::withoutGlobalScopes()
                 ->where('tenant_id', $tenantId)
                 ->where('status', '!=', 'completed')
                 ->with(['items.menuItem', 'invoice', 'waiter', 'table'])
                 ->latest()
+                ->limit(100) // Limit to recent 100 orders
                 ->get();
-
-            \Log::info('Orders fetched', ['count' => $orders->count()]);
 
             // Group orders by table
             $ordersByTable = $orders->groupBy('table_id');
-
-            \Log::info('Orders grouped by table', ['groups' => $ordersByTable->keys()->toArray()]);
 
             // Get table info for each group - only show tables belonging to this tenant
             $tables = collect();
@@ -392,56 +398,31 @@ class OrderController extends Controller
                 } else {
                     // Only show tables that belong to this tenant
                     $table = Table::withoutGlobalScopes()->find($tableId);
-                    if ($table) {
-                        // Log if table doesn't belong to tenant
-                        if ($table->tenant_id != $tenantId) {
-                            \Log::warning('Table belongs to different tenant', [
-                                'table_id' => $tableId,
-                                'table_tenant_id' => $table->tenant_id,
-                                'user_tenant_id' => $tenantId
-                            ]);
-                        } else {
-                            $tables->push([
-                                'id' => $table->id,
-                                'name' => $table->name,
-                                'status' => $table->status instanceof \BackedEnum ? $table->status->value : $table->status,
-                                'orders' => $tableOrders->map(fn ($order) => [
-                                    'id' => $order->id,
-                                    'order_no' => $order->order_no,
-                                    'order_type' => $order->order_type,
-                                    'items' => $order->items->map(fn ($item) => [
-                                        'id' => $item->id,
-                                        'name' => $item->menuItem ? $item->menuItem->name : 'Unknown',
-                                        'qty' => $item->quantity,
-                                        'status' => $item->status ?? 'pending',
-                                    ]),
-                                    'items_count' => $order->items->sum('quantity'),
-                                    'total_amount' => $order->invoice ? $order->invoice->total_amount : 0,
-                                    'status' => $order->status instanceof \BackedEnum ? $order->status->value : $order->status,
-                                    'created_at' => $order->created_at ? $order->created_at->diffForHumans() : '',
-                                    'waiter' => $order->waiter ? $order->waiter->name : null,
+                    if ($table && $table->tenant_id == $tenantId) {
+                        $tables->push([
+                            'id' => $table->id,
+                            'name' => $table->name,
+                            'status' => $table->status instanceof \BackedEnum ? $table->status->value : $table->status,
+                            'orders' => $tableOrders->map(fn ($order) => [
+                                'id' => $order->id,
+                                'order_no' => $order->order_no,
+                                'order_type' => $order->order_type,
+                                'items' => $order->items->map(fn ($item) => [
+                                    'id' => $item->id,
+                                    'name' => $item->menuItem ? $item->menuItem->name : 'Unknown',
+                                    'qty' => $item->quantity,
+                                    'status' => $item->status ?? 'pending',
                                 ]),
-                            ]);
-                        }
-                    } else {
-                        \Log::warning('Table not found', ['table_id' => $tableId]);
+                                'items_count' => $order->items->sum('quantity'),
+                                'total_amount' => $order->invoice ? $order->invoice->total_amount : 0,
+                                'status' => $order->status instanceof \BackedEnum ? $order->status->value : $order->status,
+                                'created_at' => $order->created_at ? $order->created_at->diffForHumans() : '',
+                                'waiter' => $order->waiter ? $order->waiter->name : null,
+                            ]),
+                        ]);
                     }
                 }
             }
-
-            \Log::info('Final tables collection', ['count' => $tables->count()]);
-
-            // Get order counts by type
-            $allOrders = Order::withoutGlobalScopes()->where('tenant_id', $tenantId)->with(['items', 'invoice'])->get();
-            $counts = [
-                'all' => $allOrders->where('status', '!=', 'completed')->count(),
-                'dine_in' => $allOrders->where('order_type', 'dine_in')->where('status', '!=', 'completed')->count(),
-                'takeaway' => $allOrders->where('order_type', 'takeaway')->where('status', '!=', 'completed')->count(),
-                'delivery' => $allOrders->where('order_type', 'delivery')->where('status', '!=', 'completed')->count(),
-                'online' => $allOrders->where('order_type', 'online')->where('status', '!=', 'completed')->count(),
-                'cancelled' => $allOrders->where('status', 'cancelled')->count(),
-                'history' => $allOrders->where('status', 'completed')->count(),
-            ];
 
             return response()->json([
                 'success' => true,
@@ -531,9 +512,12 @@ class OrderController extends Controller
      */
     public function getCancelledOrders()
     {
-        $orders = Order::with(['table', 'items.menuItem', 'waiter', 'invoice'])
+        $orders = Order::withoutGlobalScopes()
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('status', 'cancelled')
+            ->with(['table', 'items.menuItem', 'waiter', 'invoice'])
             ->orderBy('created_at', 'desc')
+            ->limit(100) // Limit to recent 100 orders
             ->get();
 
         return response()->json([
@@ -563,9 +547,12 @@ class OrderController extends Controller
      */
     public function getOrderHistory()
     {
-        $orders = Order::with(['table', 'items.menuItem', 'waiter', 'invoice'])
+        $orders = Order::withoutGlobalScopes()
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('status', 'completed')
+            ->with(['table', 'items.menuItem', 'waiter', 'invoice'])
             ->orderBy('created_at', 'desc')
+            ->limit(100) // Limit to recent 100 orders
             ->get();
 
         return response()->json([
@@ -595,11 +582,14 @@ class OrderController extends Controller
      */
     private function getOrdersByType($type)
     {
-        $orders = Order::with(['table', 'items.menuItem', 'waiter', 'invoice'])
+        $orders = Order::withoutGlobalScopes()
+            ->where('tenant_id', auth()->user()->tenant_id)
             ->where('order_type', $type)
             ->where('status', '!=', 'completed')
             ->where('status', '!=', 'cancelled')
+            ->with(['table', 'items.menuItem', 'waiter', 'invoice'])
             ->orderBy('created_at', 'desc')
+            ->limit(100) // Limit to recent 100 orders
             ->get();
 
         return response()->json([
