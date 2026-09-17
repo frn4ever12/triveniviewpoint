@@ -2144,9 +2144,8 @@
                 showToast('success', 'Quick order created');
                 quickCart = []; updateQuickCartDisplay();
                 bootstrap.Modal.getInstance(document.getElementById('quickBillingModal')).hide();
-                loadRecentOrders();
-                loadKOTs(); // Auto-refresh KOT section
-                setTimeout(() => location.reload(), 800);
+                // Redirect to checkout page with order
+                window.location.href = d.redirect_url;
             } else { showToast('error', d.message); }
         } catch (e) { showToast('error', 'Failed to create quick order'); }
         finally {
