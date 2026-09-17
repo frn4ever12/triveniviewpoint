@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->enum('payment_status', ['pending','paid', 'failed', 'refunded', 'cancelled'])->default('pending');
           
             // Order Type & KOT integration
-            $table->enum('order_type', ['dine_in', 'pickup', 'delivery'])->default('dine_in');
+            $table->enum('order_type', ['dine_in', 'pickup', 'delivery', 'takeaway', 'walk_in'])->default('dine_in');
             $table->string('kot_group_id')->nullable()->comment('Batch ID for grouping KOTs');
             $table->timestamp('kot_sent_at')->nullable();
 
