@@ -730,7 +730,24 @@
                             <button class="tab" onclick="switchTab(this, 'staff')">Staff</button>
                         </div>
                         <div id="customer-tab">
-                            <input type="text" class="form-input" placeholder="Search or select customer...">
+                            <div style="position: relative; margin-bottom: 8px;">
+                                <div id="customerDropdown" style="width: 100%; padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 11px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;" onclick="toggleCustomerDropdown()">
+                                    <span id="selectedCustomer">Walk-in Customer</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"/>
+                                    </svg>
+                                </div>
+                                <div id="customerDropdownMenu" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 10; display: none; max-height: 200px; overflow-y: auto;">
+                                    <div style="padding: 6px 10px; cursor: pointer; font-size: 11px; color: #374151;" onclick="selectCustomer('Walk-in Customer')">Walk-in Customer</div>
+                                    <div style="padding: 6px 10px; cursor: pointer; font-size: 11px; color: #374151; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 4px;" onclick="openAddCustomerModal()">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"/>
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                        </svg>
+                                        <span style="color: #3b82f6; font-weight: 600;">+ Add New Customer</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div id="staff-tab" style="display:none;">
                             <div style="color:#6b7280;font-size:11px;">{{ Auth::user()->name ?? 'N/A' }}</div>
@@ -812,22 +829,35 @@
 
             <!-- Right Invoice Panel -->
             <div class="checkout-invoice-panel print-area">
-                <div class="estimate-header">ESTIMATE INVOICE</div>
-                <div class="estimate-row">
-                    <span>Invoice No:</span>
-                    <span>##</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Date:</span>
-                    <span>{{ now()->format('M d, Y') }}</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Dine In:</span>
-                    <span>{{ $table->name ?? 'N/A' }}</span>
-                </div>
-                <div class="estimate-row">
-                    <span>Customer:</span>
-                    <span>Cash Customer</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                        <div class="estimate-header">ESTIMATE INVOICE</div>
+                        <div class="estimate-row">
+                            <span>Invoice No:</span>
+                            <span>##</span>
+                        </div>
+                        <div class="estimate-row">
+                            <span>Date:</span>
+                            <span>{{ now()->format('M d, Y') }}</span>
+                        </div>
+                        <div class="estimate-row">
+                            <span>Dine In:</span>
+                            <span>{{ $table->name ?? 'N/A' }}</span>
+                        </div>
+                        <div class="estimate-row">
+                            <span>Customer:</span>
+                            <span>Walk-in Customer</span>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-left: 8px;">
+                        <div style="width: 50px; height: 50px; background: #fef9c3; border: 1px solid #fcd34d; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                            <svg width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M8 8h8M8 12h8M8 16h4"/>
+                            </svg>
+                        </div>
+                        <div style="font-size: 7px; color: #78350f; max-width: 50px;">Scan for full bill details & pay</div>
+                    </div>
                 </div>
                 <div class="estimate-particular">
                     <div class="estimate-particular-title">Particular</div>
@@ -899,6 +929,43 @@
                     Thank You<br>
                     Thank you for your visit! Visit again
                 </div>
+                
+                <!-- Payment Calculation Fields -->
+                <div style="border-top: 1px solid #fcd34d; padding-top: 10px; margin-top: 10px;">
+                    <div style="margin-bottom: 6px;">
+                        <label style="font-size: 9px; color: #78350f; font-weight: 600; display: block; margin-bottom: 3px;">Amount Received</label>
+                        <input type="number" id="invoiceAmountReceived" style="width: 100%; padding: 6px; border: 1px solid #fcd34d; border-radius: 2px; font-size: 10px;" placeholder="0.00" oninput="calculateChangeDue()">
+                    </div>
+                    <div>
+                        <label style="font-size: 9px; color: #78350f; font-weight: 600; display: block; margin-bottom: 3px;">Change Due</label>
+                        <div id="invoiceChangeDue" style="width: 100%; padding: 6px; background: #fef9c3; border: 1px solid #fcd34d; border-radius: 2px; font-size: 10px; font-weight: 700; color: #059669;">Rs 0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Customer Modal -->
+    <div class="success-modal-overlay" id="addCustomerModalOverlay">
+        <div class="success-modal">
+            <div class="success-modal-header" style="background: #1A73E8;">Add New Customer</div>
+            <div class="success-modal-body">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; color: #374151; font-weight: 600; display: block; margin-bottom: 4px;">Full Name *</label>
+                    <input type="text" id="newCustomerName" style="width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 12px;" placeholder="Enter full name">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; color: #374151; font-weight: 600; display: block; margin-bottom: 4px;">Phone Number *</label>
+                    <input type="tel" id="newCustomerPhone" style="width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 4px; font-size: 12px;" placeholder="Enter phone number">
+                </div>
+                <div style="margin-bottom: 0;">
+                    <label style="font-size: 11px; color: #374151; font-weight: 600; display: block; margin-bottom: 4px;">Address (optional)</label>
+                    <textarea id="newCustomerAddress" style="width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 4px; resize: vertical; font-size: 12px;" rows="3" placeholder="Enter address"></textarea>
+                </div>
+            </div>
+            <div class="success-modal-footer">
+                <button class="success-modal-btn success-modal-btn-close" onclick="closeAddCustomerModal()">Cancel</button>
+                <button class="success-modal-btn success-modal-btn-download" onclick="saveNewCustomer()">Add Customer</button>
             </div>
         </div>
     </div>

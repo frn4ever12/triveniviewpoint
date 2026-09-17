@@ -318,6 +318,36 @@
         </div>
 
         
+        <div class="modal fade" id="addCustomerModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 8px; border: none;">
+                    <div class="modal-header" style="border-bottom: 1px solid #e5e7eb; padding: 16px 20px;">
+                        <h5 class="modal-title mb-0" style="font-size: 16px; font-weight: 700; color: #1f2937;">Add New Customer</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" style="padding: 0; width: 24px; height: 24px;"></button>
+                    </div>
+                    <div class="modal-body" style="padding: 20px;">
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Full Name *</label>
+                            <input type="text" id="newCustomerName" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px;" placeholder="Enter full name">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Phone Number *</label>
+                            <input type="tel" id="newCustomerPhone" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px;" placeholder="Enter phone number">
+                        </div>
+                        <div style="margin-bottom: 0;">
+                            <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Address (optional)</label>
+                            <textarea id="newCustomerAddress" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; resize: vertical; font-size: 13px;" rows="3" placeholder="Enter address"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #e5e7eb; padding: 16px 20px; gap: 8px;">
+                        <button type="button" class="btn" data-bs-dismiss="modal" style="flex: 1; padding: 10px 16px; border: 1px solid #e5e7eb; background: white; border-radius: 6px; font-size: 13px; font-weight: 600; color: #374151;">Cancel</button>
+                        <button type="button" class="btn" onclick="saveNewCustomer()" style="flex: 1; padding: 10px 16px; border: none; background: #1A73E8; border-radius: 6px; font-size: 13px; font-weight: 600; color: white;">Add Customer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
         <div class="modal fade" id="addItemsModal" tabindex="-1">
             <div class="modal-dialog modal-xl modal-dialog-centered">
                 <div class="modal-content" style="border-radius:14px;border:none;">
@@ -1338,6 +1368,62 @@
             });
     }
 
+    // Toggle customer dropdown
+    function toggleCustomerDropdown() {
+        const menu = document.getElementById('customerDropdownMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    // Select customer from dropdown
+    function selectCustomer(customerName) {
+        document.getElementById('selectedCustomer').textContent = customerName;
+        document.getElementById('customerDropdownMenu').style.display = 'none';
+    }
+    
+    // Open add customer modal
+    function openAddCustomerModal() {
+        document.getElementById('customerDropdownMenu').style.display = 'none';
+        const modal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
+        modal.show();
+    }
+    
+    // Save new customer
+    function saveNewCustomer() {
+        const name = document.getElementById('newCustomerName').value.trim();
+        const phone = document.getElementById('newCustomerPhone').value.trim();
+        const address = document.getElementById('newCustomerAddress').value.trim();
+        
+        if (!name || !phone) {
+            alert('Please fill in required fields (Full Name and Phone Number)');
+            return;
+        }
+        
+        // Add customer to dropdown (in real implementation, save to database)
+        const menu = document.getElementById('customerDropdownMenu');
+        const newOption = document.createElement('div');
+        newOption.style.cssText = 'padding: 8px 12px; cursor: pointer; font-size: 12px; color: #374151;';
+        newOption.textContent = name;
+        newOption.onclick = () => selectCustomer(name);
+        menu.insertBefore(newOption, menu.lastElementChild);
+        
+        // Select the new customer
+        selectCustomer(name);
+        
+        // Clear form and close modal
+        document.getElementById('newCustomerName').value = '';
+        document.getElementById('newCustomerPhone').value = '';
+        document.getElementById('newCustomerAddress').value = '';
+        bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+    }
+    
+    // Calculate change due
+    function calculateChangeDue() {
+        const amountReceived = parseFloat(document.getElementById('invoiceAmountReceived').value) || 0;
+        const grandTotal = parseFloat(document.querySelector('#tenderAmount')?.value || 0);
+        const changeDue = Math.max(0, amountReceived - grandTotal);
+        document.getElementById('invoiceChangeDue').textContent = 'Rs ' + changeDue.toFixed(2);
+    }
+
     function renderCheckoutContent(data) {
         const contentDiv = document.getElementById('checkoutContent');
         const estimateDiv = document.getElementById('estimateInvoiceContent');
@@ -1418,9 +1504,23 @@
                     <!-- Customer -->
                     <div style="background: white; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px;">
                         <h6 style="font-weight: 700; margin-bottom: 8px; color: #1f2937; font-size: 13px;">Customer</h6>
-                        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                            <input type="text" style="flex: 1; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 12px;" placeholder="Search or select customer...">
-                            <button style="padding: 8px 12px; background: #3b82f6; color: white; border: none; border-radius: 2px; font-size: 12px; font-weight: 600;">+</button>
+                        <div style="position: relative; margin-bottom: 8px;">
+                            <div id="customerDropdown" style="width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white;" onclick="toggleCustomerDropdown()">
+                                <span id="selectedCustomer">Walk-in Customer</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                            <div id="customerDropdownMenu" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e5e7eb; border-radius: 2px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 10; display: none; max-height: 200px; overflow-y: auto;">
+                                <div style="padding: 8px 12px; cursor: pointer; font-size: 12px; color: #374151;" onclick="selectCustomer('Walk-in Customer')">Walk-in Customer</div>
+                                <div style="padding: 8px 12px; cursor: pointer; font-size: 12px; color: #374151; border-top: 1px solid #f3f4f6; display: flex; align-items: center; gap: 4px;" onclick="openAddCustomerModal()">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    <span style="color: #3b82f6; font-weight: 600;">+ Add New Customer</span>
+                                </div>
+                            </div>
                         </div>
                         <textarea style="width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 2px; resize: vertical; font-size: 12px;" rows="2" placeholder="Remarks"></textarea>
                     </div>
@@ -1493,10 +1593,23 @@
         `;
 
         estimateDiv.innerHTML = `
-            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Invoice No: ##</div>
-            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Date: ${new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</div>
-            <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">${data.order?.order_type || 'Dine In'}: ${table.name || 'N/A'}</div>
-            <div style="margin-bottom: 12px; font-size: 11px; color: #6b7280;">Customer: Cash Customer</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div>
+                    <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Invoice No: ##</div>
+                    <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">Date: ${new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</div>
+                    <div style="margin-bottom: 8px; font-size: 11px; color: #6b7280;">${data.order?.order_type || 'Dine In'}: ${table.name || 'N/A'}</div>
+                    <div style="margin-bottom: 12px; font-size: 11px; color: #6b7280;">Customer: Walk-in Customer</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="width: 60px; height: 60px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 4px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M8 8h8M8 12h8M8 16h4"/>
+                        </svg>
+                    </div>
+                    <div style="font-size: 8px; color: #6b7280; max-width: 60px;">Scan for full bill details & pay</div>
+                </div>
+            </div>
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px;">
                 <thead>
                     <tr style="border-bottom: 1px solid #e5e7eb;">
@@ -1528,6 +1641,18 @@
             <div style="margin-bottom: 8px; font-size: 10px; color: #6b7280; text-align: center;">Kindly accept the original bill from the counter.</div>
             <div style="margin-bottom: 8px; font-size: 11px; color: #1f2937; text-align: center; font-weight: 600;">Thank You</div>
             <div style="margin-bottom: 12px; font-size: 10px; color: #6b7280; text-align: center;">Thank you for your visit! Visit again</div>
+            
+            <!-- Payment Calculation Fields -->
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 12px;">
+                <div style="margin-bottom: 8px;">
+                    <label style="font-size: 10px; color: #6b7280; font-weight: 600; display: block; margin-bottom: 4px;">Amount Received</label>
+                    <input type="number" id="invoiceAmountReceived" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 12px;" placeholder="0.00" oninput="calculateChangeDue()">
+                </div>
+                <div>
+                    <label style="font-size: 10px; color: #6b7280; font-weight: 600; display: block; margin-bottom: 4px;">Change Due</label>
+                    <div id="invoiceChangeDue" style="width: 100%; padding: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 2px; font-size: 12px; font-weight: 700; color: #059669;">Rs 0.00</div>
+                </div>
+            </div>
         `;
 
         const buttonsDiv = document.getElementById('estimateInvoiceButtons');
